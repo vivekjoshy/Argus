@@ -4,7 +4,9 @@ import discord
 from discord import app_commands, Embed, Permissions
 from discord.ext import commands
 
+from argus.checks import check_prerequisites_enabled
 from argus.client import ArgusClient
+from argus.utils import update
 
 
 @app_commands.default_permissions(administrator=True)
@@ -16,11 +18,12 @@ class Layout(commands.GroupCog, name="setup"):
         # Setup Roles
         self.bot.state["map_roles"] = {
             "role_warden": None,
-            "role_first_citizen": None,
-            "role_staff_director": None,
-            "role_staff_moderator": None,
-            "role_community_director": None,
-            "role_community_moderator" "role_host": None,
+            "role_the_crown": None,
+            "role_moderation_bot": None,
+            "role_chancellor": None,
+            "role_liege": None,
+            "role_prime_minister": None,
+            "role_host": None,
             "role_grandmaster": None,
             "role_legend": None,
             "role_master": None,
@@ -40,26 +43,62 @@ class Layout(commands.GroupCog, name="setup"):
             "role_everyone": None,
         }
 
+        # Setup Channels
+        self.bot.state["map_channels"] = {
+            "category_information": None,
+            "tc_rules": None,
+            "tc_about": None,
+            "tc_announcements": None,
+            "tc_community_updates": None,
+            "category_moderation": None,
+            "tc_mod_commands": None,
+            "tc_isolation": None,
+            "category_interface": None,
+            "tc_debate_feed": None,
+            "tc_commands": None,
+            "category_events": None,
+            "category_community": None,
+            "tc_general": None,
+            "tc_memes": None,
+            "category_debate": None,
+            "category_logs": None,
+            "tc_moderator_actions": None,
+            "tc_message_deletion": None,
+            "tc_message_edits": None,
+            "tc_ban_unban": None,
+            "tc_nicknames": None,
+            "tc_join_leave": None,
+            "tc_automod": None,
+            "tc_channels": None,
+            "tc_invites": None,
+            "tc_roles": None,
+            "tc_voice": None,
+        }
+
     @app_commands.command(
         name="roles",
         description="Setup roles required by the bot. This is a dangerous procedure that alters the database.",
     )
+    @check_prerequisites_enabled()
     async def roles(self, interaction: discord.Interaction) -> None:
-        await interaction.response.send_message(
+        # todo: only update roles without deleting them completely
+        await update(
+            interaction,
             embed=Embed(
                 title="Processing Roles",
                 description="This may take a while.",
                 color=0xF1C40F,
-            )
+            ),
         )
 
         if self.bot.state["roles_are_setup"]:
-            await interaction.edit_original_message(
+            await update(
+                interaction,
                 embed=Embed(
                     title="Roles Already Set Up",
                     description="Please restart the bot manually if your still want to overwrite roles.",
                     color=0xE74C3C,
-                )
+                ),
             )
             return
 
@@ -94,6 +133,12 @@ class Layout(commands.GroupCog, name="setup"):
             hoist=False,
         )
         await interaction.guild.owner.add_roles(roles["role_the_crown"])
+
+        roles["role_moderation_bot"] = await interaction.guild.create_role(
+            name="Moderation Bot",
+            permissions=Permissions(permissions=1089042513857),
+            hoist=False,
+        )
 
         roles["role_chancellor"] = await interaction.guild.create_role(
             name="Chancellor",
@@ -230,12 +275,28 @@ class Layout(commands.GroupCog, name="setup"):
         self.bot.state["roles_are_setup"] = True
 
         # Send Confirmation Message
-        await interaction.edit_original_message(
+        await update(
+            interaction,
             embed=Embed(
                 title="Roles Updated",
                 description="Roles have been successfully set up.",
                 color=0x2ECC71,
-            )
+            ),
+        )
+
+    @app_commands.command(
+        name="channels",
+        description="Setup channels required by the bot. This is a dangerous procedure that alters the database.",
+    )
+    async def channels(self, interaction: discord.Interaction) -> None:
+        # todo: only update channels without deleting them completely
+        await update(
+            interaction,
+            embed=Embed(
+                title="Processing Channels",
+                description="This may take a while.",
+                color=0xF1C40F,
+            ),
         )
 
 
