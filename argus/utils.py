@@ -6,7 +6,7 @@ async def update(interaction: Interaction, *args, **kwargs):
     Convenience method that updates an initial response if one is already sent.
     If no initial response is sent, then it sends one.
     """
-    if interaction.original_message():
+    if interaction.response.is_done():
         await interaction.edit_original_message(*args, **kwargs)
     else:
         await interaction.response.send_message(*args, **kwargs)

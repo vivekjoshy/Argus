@@ -1,9 +1,14 @@
 from discord import app_commands, Interaction
 
+from argus.constants import DB_ROLE_NAME_MAP
 from argus.errors import UnsatisfiedRequirements
 
 
 def check_prerequisites_enabled():
+    """
+    Checks if the server pre-requisites are satisfied.
+    """
+
     def predicate(interaction: Interaction) -> bool:
         guild = interaction.guild
         if (

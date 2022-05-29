@@ -6,11 +6,17 @@ from discord.ext import commands
 
 from argus.checks import check_prerequisites_enabled
 from argus.client import ArgusClient
+from argus.constants import (
+    DB_ROLE_NAME_MAP,
+    ROLE_PERMISSIONS,
+    RANK_RATING_MAP,
+    ROLE_COLORS,
+)
 from argus.utils import update
 
 
 @app_commands.default_permissions(administrator=True)
-class Layout(commands.GroupCog, name="setup"):
+class Setup(commands.GroupCog, name="setup"):
     def __init__(self, bot: ArgusClient) -> None:
         self.bot = bot
         super().__init__()
@@ -81,7 +87,6 @@ class Layout(commands.GroupCog, name="setup"):
     )
     @check_prerequisites_enabled()
     async def roles(self, interaction: discord.Interaction) -> None:
-        # todo: only update roles without deleting them completely
         await update(
             interaction,
             embed=Embed(
@@ -284,6 +289,43 @@ class Layout(commands.GroupCog, name="setup"):
             ),
         )
 
+    async def check_roles_exist(self, interaction: discord.Interaction) -> bool:
+        guild = self.bot.get_guild(self.bot.config["global"]["guild_id"])
+
+        # Check Roles Exist in Database
+        for role in guild.roles:
+            if not role.managed:
+                db_role_id = await self.bot.db.get(
+                    guild, state=f"{DB_ROLE_NAME_MAP[role.name]}"
+                )
+                if not db_role_id:
+                    await update(
+                        interaction,
+                        embed=Embed(
+                            title=f"Roles Missing",
+                            description="Please run the setup of roles again. "
+                            "Roles in this server were never added to the database",
+                            color=0xE74C3C,
+                        ),
+                        ephemeral=True,
+                    )
+                    return False
+                elif role.id == db_role_id:
+                    continue
+                else:
+                    await update(
+                        interaction,
+                        embed=Embed(
+                            title=f"Data Mismatch",
+                            description="Please run the setup of roles again. "
+                            "Roles in the server do not match the database.",
+                            color=0xE74C3C,
+                        ),
+                        ephemeral=True,
+                    )
+                    return False
+        return True
+
     @app_commands.command(
         name="channels",
         description="Setup channels required by the bot. This is a dangerous procedure that alters the database.",
@@ -300,7 +342,160 @@ class Layout(commands.GroupCog, name="setup"):
         )
 
 
+@app_commands.default_permissions(administrator=True)
+class Migrate(commands.GroupCog, name="migrate"):
+    def __init__(self, bot: ArgusClient) -> None:
+        self.bot = bot
+        super().__init__()
+
+    @app_commands.command(
+        name="roles",
+        description="Add and remove roles required by the bot. This is a dangerous procedure that modifies the server.",
+    )
+    @check_prerequisites_enabled()
+    async def roles(self, interaction: discord.Interaction) -> None:
+        guild = self.bot.get_guild(self.bot.config["global"]["guild_id"])
+
+        await update(
+            interaction,
+            embed=Embed(
+                title="Migrating Roles",
+                description="This may take a while.",
+                color=0xF1C40F,
+            ),
+        )
+
+        # Check if role exist and that their permissions are correct.
+        # If incorrect fix it automatically.
+        for role in guild.roles:
+            if not role.managed:
+                if role.name in DB_ROLE_NAME_MAP.keys():
+                    if (
+                        role.permissions.value
+                        == ROLE_PERMISSIONS[DB_ROLE_NAME_MAP[role.name]]
+                    ):
+                        if ROLE_COLORS[DB_ROLE_NAME_MAP[role.name]]:
+                            if (
+                                role.color.value
+                                == ROLE_COLORS[DB_ROLE_NAME_MAP[role.name]]
+                            ):
+                                continue
+                            else:
+                                await role.edit(
+                                    color=ROLE_COLORS[DB_ROLE_NAME_MAP[role.name]]
+                                )
+                        else:
+                            continue
+                    else:
+                        await role.edit(
+                            permissions=Permissions(
+                                ROLE_PERMISSIONS[DB_ROLE_NAME_MAP[role.name]]
+                            )
+                        )
+                else:
+                    await role.delete()
+
+        db_roles = list(DB_ROLE_NAME_MAP.keys())
+        db_roles.remove("@everyone")
+        for db_role_name in db_roles:
+            role = discord.utils.get(guild.roles, name=db_role_name)
+            if ROLE_COLORS[DB_ROLE_NAME_MAP[db_role_name]]:
+                if not role:
+                    await guild.create_role(
+                        name=db_role_name,
+                        permissions=Permissions(
+                            ROLE_PERMISSIONS[DB_ROLE_NAME_MAP[db_role_name]]
+                        ),
+                        color=ROLE_COLORS[DB_ROLE_NAME_MAP[db_role_name]],
+                        hoist=bool(DB_ROLE_NAME_MAP[db_role_name] in RANK_RATING_MAP),
+                    )
+            else:
+                if not role:
+                    await guild.create_role(
+                        name=db_role_name,
+                        permissions=Permissions(
+                            ROLE_PERMISSIONS[DB_ROLE_NAME_MAP[db_role_name]]
+                        ),
+                        hoist=bool(DB_ROLE_NAME_MAP[db_role_name] in RANK_RATING_MAP),
+                    )
+
+        current_positions = {}
+        for role in guild.roles:
+            current_positions[role.name] = role.position
+
+        positions = {guild.me.top_role: 1}
+        db_role_names = {
+            _: DB_ROLE_NAME_MAP[_] for _ in DB_ROLE_NAME_MAP if _ != "@everyone"
+        }
+        for index, db_role_name in enumerate(db_role_names):
+            role = discord.utils.get(guild.roles, name=db_role_name)
+            positions[role] = index + 2
+
+        managed_roles = []
+        for role in guild.roles:
+            if role.managed and not role.is_default():
+                if role != guild.me.top_role:
+                    managed_roles.append(role)
+
+        for index, role in enumerate(managed_roles):
+            positions[role] = len(positions) + index + 1
+
+        keys = list(positions.keys())
+        values = list(positions.values())[::-1]
+        positions = dict(zip(keys, values))
+        await guild.edit_role_positions(positions)
+
+        # Prime Local Cache
+        roles = {}
+        for role in guild.roles:
+            if not role.managed and not role.is_default():
+                roles[DB_ROLE_NAME_MAP[role.name]] = role
+
+        # Assign Roles
+        await guild.owner.add_roles(roles["role_the_crown"])
+
+        # Update Database
+        await self.bot.db.upsert(
+            interaction.guild,
+            role_warden=roles["role_warden"].id,
+            role_the_crown=roles["role_the_crown"].id,
+            role_chancellor=roles["role_chancellor"].id,
+            role_liege=roles["role_liege"].id,
+            role_prime_minister=roles["role_prime_minister"].id,
+            role_host=roles["role_host"].id,
+            role_grandmaster=roles["role_grandmaster"].id,
+            role_legend=roles["role_legend"].id,
+            role_master=roles["role_master"].id,
+            role_expert=roles["role_expert"].id,
+            role_distinguished=roles["role_distinguished"].id,
+            role_apprentice=roles["role_apprentice"].id,
+            role_novice=roles["role_novice"].id,
+            role_initiate=roles["role_initiate"].id,
+            role_rookie=roles["role_rookie"].id,
+            role_incompetent=roles["role_incompetent"].id,
+            role_bot=roles["role_bot"].id,
+            role_citizen=roles["role_citizen"].id,
+            role_events=roles["role_events"].id,
+            role_logs=roles["role_logs"].id,
+            role_debate_ping=roles["role_debate_ping"].id,
+            role_detained=roles["role_detained"].id,
+        )
+
+        # Send Confirmation Message
+        await update(
+            interaction,
+            embed=Embed(
+                title="Roles Migrated",
+                description="Missing roles and their permissions have been set up.",
+                color=0x2ECC71,
+            ),
+        )
+
+
 async def setup(bot: ArgusClient) -> None:
     await bot.add_cog(
-        Layout(bot), guilds=[discord.Object(id=bot.config["global"]["guild_id"])]
+        Setup(bot), guilds=[discord.Object(id=bot.config["global"]["guild_id"])]
+    )
+    await bot.add_cog(
+        Migrate(bot), guilds=[discord.Object(id=bot.config["global"]["guild_id"])]
     )

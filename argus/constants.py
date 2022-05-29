@@ -104,8 +104,36 @@ ROLE_PERMISSIONS = {
     "role_everyone": 2184252480,
 }
 
+ROLE_COLORS = {
+    "role_warden": 0xEB6A5C,
+    "role_the_crown": 0xD4AF37,
+    "role_moderation_bot": None,
+    "role_chancellor": 0x9B59B6,
+    "role_liege": 0xE74C3C,
+    "role_prime_minister": 0xE91E63,
+    "role_minister": 0x2ECC71,
+    "role_host": None,
+    "role_grandmaster": None,
+    "role_legend": None,
+    "role_master": None,
+    "role_expert": None,
+    "role_distinguished": None,
+    "role_apprentice": None,
+    "role_novice": None,
+    "role_initiate": None,
+    "role_rookie": None,
+    "role_incompetent": None,
+    "role_bot": None,
+    "role_citizen": None,
+    "role_logs": None,
+    "role_events": None,
+    "role_debate_ping": None,
+    "role_detained": None,
+    "role_everyone": None,
+}
+
 # Bot Global Strings
 BOT_DESCRIPTION = "Elections and Debates for Discord Servers"
 
 # Bot Plugins Directories
-PLUGINS = ["plugins.layout", "plugins.meta"]
+PLUGINS = ["plugins.global", "plugins.layout", "plugins.meta"]

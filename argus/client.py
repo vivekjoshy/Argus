@@ -17,6 +17,7 @@ class ArgusClient(commands.Bot):
         # Setup Defaults
         self.config = config
         self.logger = logger
+        self.db = None
 
         # Setup State Management
         self.state = {
@@ -45,9 +46,6 @@ class ArgusClient(commands.Bot):
             "events_tc_2": None,
         }
 
-        # Setup Database
-        self.db = MongoClient(config=config)
-
         super().__init__(
             command_prefix=["$"],
             description=BOT_DESCRIPTION,
@@ -69,3 +67,6 @@ class ArgusClient(commands.Bot):
                 self.logger.exception(f"Failed to load Plugin", extension=extension)
             except Exception as e:
                 self.logger.exception("Core Error")
+
+        # Setup Database
+        self.db = MongoClient(config=self.config)

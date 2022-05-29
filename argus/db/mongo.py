@@ -58,7 +58,7 @@ class MongoClient(AsyncIOMotorClient, DatabaseDriverBase):
         Updates an existing state's value. Creates a state
         if it does not exist. Also creates a database collection
         for each entity type when needed.
-        :param entity: Any hikari object with an id attribute
+        :param entity: Any discord object with an id attribute
         :param states: A dict of state and possible values
         """
         if not (hasattr(entity, "id")):
@@ -74,7 +74,7 @@ class MongoClient(AsyncIOMotorClient, DatabaseDriverBase):
     async def get(self, entity, state):
         """
         Grabs the value stored for an entity's state.
-        :param entity: Any hikari object with an id attribute
+        :param entity: Any discord object with an id attribute
         :param state: An event passed as str
         :return: Returns the state's value if found or returns None
         """
@@ -97,7 +97,7 @@ class MongoClient(AsyncIOMotorClient, DatabaseDriverBase):
     async def increment(self, entity, state, value):
         """
         Increments an existing state's value.
-        :param entity: Any hikari object with an id attribute
+        :param entity: Any discord object with an id attribute
         :param state: A state of type int
         :param value: The value to increment the state by
         """
