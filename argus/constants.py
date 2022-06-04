@@ -7,6 +7,7 @@ DB_ROLE_NAME_MAP = {
     "Prime Minister": "role_prime_minister",
     "Minister": "role_minister",
     "Host": "role_host",
+    "Champion": "role_champion",
     "Grandmaster": "role_grandmaster",
     "Legend": "role_legend",
     "Master": "role_master",
@@ -19,6 +20,7 @@ DB_ROLE_NAME_MAP = {
     "Incompetent": "role_incompetent",
     "Bot": "role_bot",
     "Citizen": "role_citizen",
+    "Member": "role_member",
     "Logs": "role_logs",
     "Events": "role_events",
     "Debate Ping": "role_debate_ping",
@@ -36,6 +38,7 @@ DB_CHANNEL_NAME_MAP = {
     "mod-commands": "tc_mod_commands",
     "isolation": "tc_isolation",
     "Interface": "category_interface",
+    "election-feed": "tc_election_feed",
     "debate-feed": "tc_debate_feed",
     "commands": "tc_commands",
     "Events": "category_events",
@@ -43,7 +46,6 @@ DB_CHANNEL_NAME_MAP = {
     "general": "tc_general",
     "memes": "tc_memes",
     "Debate": "category_debate",
-    "Lounge": "category_lounge",
     "Logs": "category_logs",
     "moderator-actions": "tc_moderator_actions",
     "message-deletion": "tc_message_deletion",
@@ -59,7 +61,6 @@ DB_CHANNEL_NAME_MAP = {
 }
 
 for _channel_number in range(1, 21):
-    DB_CHANNEL_NAME_MAP[f"debate-{_channel_number}"] = f"tc_debate_{_channel_number}"
     DB_CHANNEL_NAME_MAP[f"Debate {_channel_number}"] = f"vc_debate_{_channel_number}"
 
 
@@ -79,12 +80,13 @@ RANK_RATING_MAP = {
 ROLE_PERMISSIONS = {
     "role_warden": 0,
     "role_the_crown": 0,
-    "role_moderation_bot": 1089042513857,
-    "role_chancellor": 1098639081441,
-    "role_liege": 1098639081409,
-    "role_prime_minister": 1097564815169,
-    "role_minister": 1097564815169,
+    "role_moderation_bot": 1632355483073,
+    "role_chancellor": 1643025792448,
+    "role_liege": 1643025792320,
+    "role_prime_minister": 1634435857728,
+    "role_minister": 1617255988544,
     "role_host": 0,
+    "role_champion": 0,
     "role_grandmaster": 0,
     "role_legend": 0,
     "role_master": 0,
@@ -96,7 +98,8 @@ ROLE_PERMISSIONS = {
     "role_rookie": 0,
     "role_incompetent": 0,
     "role_bot": 0,
-    "role_citizen": 2251673153,
+    "role_citizen": 517580639296,
+    "role_member": 517580639296,
     "role_logs": 0,
     "role_events": 0,
     "role_debate_ping": 0,
@@ -113,6 +116,7 @@ ROLE_COLORS = {
     "role_prime_minister": 0xE91E63,
     "role_minister": 0x2ECC71,
     "role_host": None,
+    "role_champion": None,
     "role_grandmaster": None,
     "role_legend": None,
     "role_master": None,
@@ -124,7 +128,8 @@ ROLE_COLORS = {
     "role_rookie": None,
     "role_incompetent": None,
     "role_bot": None,
-    "role_citizen": None,
+    "role_citizen": 0x3498DB,
+    "role_member": None,
     "role_logs": None,
     "role_events": None,
     "role_debate_ping": None,

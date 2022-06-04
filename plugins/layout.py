@@ -11,7 +11,9 @@ from argus.constants import (
     ROLE_PERMISSIONS,
     RANK_RATING_MAP,
     ROLE_COLORS,
+    DB_CHANNEL_NAME_MAP,
 )
+from argus.overwrites import generate_overwrites, NEGATIVE, MODERATION_BOT
 from argus.utils import update
 
 
@@ -29,6 +31,7 @@ class Setup(commands.GroupCog, name="setup"):
             "role_chancellor": None,
             "role_liege": None,
             "role_prime_minister": None,
+            "role_minister": None,
             "role_host": None,
             "role_grandmaster": None,
             "role_legend": None,
@@ -60,6 +63,7 @@ class Setup(commands.GroupCog, name="setup"):
             "tc_mod_commands": None,
             "tc_isolation": None,
             "category_interface": None,
+            "tc_election_feed": None,
             "tc_debate_feed": None,
             "tc_commands": None,
             "category_events": None,
@@ -178,6 +182,11 @@ class Setup(commands.GroupCog, name="setup"):
             name="Host", permissions=Permissions(permissions=0), hoist=False
         )
 
+        # Event Roles
+        roles["role_champion"] = await interaction.guild.create_role(
+            name="Champion", permissions=Permissions(permissions=0), hoist=True
+        )
+
         # Setup Rated Roles
         roles["role_grandmaster"] = await interaction.guild.create_role(
             name="Grandmaster", permissions=Permissions(permissions=0), hoist=True
@@ -239,7 +248,6 @@ class Setup(commands.GroupCog, name="setup"):
             name="Events", permissions=Permissions(permissions=0), hoist=False
         )
 
-        # todo: ping automatically when someone risks their skill rating
         roles["role_debate_ping"] = await interaction.guild.create_role(
             name="Debate Ping", permissions=Permissions(permissions=0), hoist=False
         )
@@ -254,10 +262,13 @@ class Setup(commands.GroupCog, name="setup"):
             interaction.guild,
             role_warden=roles["role_warden"].id,
             role_the_crown=roles["role_the_crown"].id,
+            role_moderation_bot=roles["role_moderation_bot"].id,
             role_chancellor=roles["role_chancellor"].id,
             role_liege=roles["role_liege"].id,
             role_prime_minister=roles["role_prime_minister"].id,
+            role_minister=roles["role_minister"].id,
             role_host=roles["role_host"].id,
+            role_champion=roles["role_champion"].id,
             role_grandmaster=roles["role_grandmaster"].id,
             role_legend=roles["role_legend"].id,
             role_master=roles["role_master"].id,
@@ -270,6 +281,7 @@ class Setup(commands.GroupCog, name="setup"):
             role_incompetent=roles["role_incompetent"].id,
             role_bot=roles["role_bot"].id,
             role_citizen=roles["role_citizen"].id,
+            role_member=roles["role_member"].id,
             role_events=roles["role_events"].id,
             role_logs=roles["role_logs"].id,
             role_debate_ping=roles["role_debate_ping"].id,
@@ -292,8 +304,13 @@ class Setup(commands.GroupCog, name="setup"):
     async def check_roles_exist(self, interaction: discord.Interaction) -> bool:
         guild = self.bot.get_guild(self.bot.config["global"]["guild_id"])
 
-        # Check Roles Exist in Database
+        # Setup Role Cache
         for role in guild.roles:
+            if not role.managed:
+                self.bot.state["map_roles"][DB_ROLE_NAME_MAP[role.name]] = role
+
+        # Check Roles Exist in Database
+        for role in guild.roles[1:]:
             if not role.managed:
                 db_role_id = await self.bot.db.get(
                     guild, state=f"{DB_ROLE_NAME_MAP[role.name]}"
@@ -331,13 +348,303 @@ class Setup(commands.GroupCog, name="setup"):
         description="Setup channels required by the bot. This is a dangerous procedure that alters the database.",
     )
     async def channels(self, interaction: discord.Interaction) -> None:
-        # todo: only update channels without deleting them completely
         await update(
             interaction,
             embed=Embed(
                 title="Processing Channels",
                 description="This may take a while.",
                 color=0xF1C40F,
+            ),
+        )
+
+        if interaction.channel != interaction.guild.rules_channel:
+            await update(
+                interaction,
+                embed=Embed(
+                    title="Incorrect Channel",
+                    description="This command cannot be run in this channel.",
+                    color=0xE74C3C,
+                ),
+                ephemeral=True,
+            )
+            return
+
+        roles_exist = await self.check_roles_exist(interaction)
+
+        if not roles_exist:
+            await update(
+                interaction,
+                embed=Embed(
+                    title="Data Mismatch",
+                    description="Please run the setup of roles again. "
+                    "Roles in the server do not match the database.",
+                    color=0xE74C3C,
+                ),
+            )
+            return
+
+        # Shortcuts
+        guild = interaction.guild
+        roles = self.bot.state["map_roles"]
+        channels = self.bot.state["map_channels"]
+
+        # Delete All Channels
+        skipped_channels = [guild.rules_channel, guild.public_updates_channel]
+        for channel in guild.channels:
+            if channel not in skipped_channels:
+                await channel.delete()
+
+        # Setup Information Category
+        channels["category_information"] = await guild.create_category_channel(
+            name="Information",
+            overwrites=generate_overwrites(
+                interaction, roles=roles, channel="information"
+            ),
+        )
+
+        await guild.rules_channel.edit(
+            category=channels["category_information"],
+            overwrites=generate_overwrites(
+                interaction, roles=roles, channel="information"
+            ),
+        )
+        channels["tc_rules"] = guild.rules_channel
+
+        channels["tc_about"] = await guild.create_text_channel(
+            name="about",
+            category=channels["category_information"],
+            overwrites=generate_overwrites(
+                interaction, roles=roles, channel="information"
+            ),
+        )
+
+        channels["tc_announcements"] = await guild.create_text_channel(
+            name="announcements",
+            category=channels["category_information"],
+            overwrites=generate_overwrites(
+                interaction, roles=roles, channel="announcements"
+            ),
+        )
+
+        await guild.public_updates_channel.edit(
+            category=channels["category_information"],
+            overwrites=generate_overwrites(
+                interaction, roles=roles, channel="community-updates"
+            ),
+        )
+        channels["tc_community_updates"] = guild.rules_channel
+
+        # Set Positions for Information Category
+        await guild.rules_channel.edit(position=2)
+        await channels["tc_about"].edit(position=3)
+        await channels["tc_announcements"].edit(position=4)
+        await guild.public_updates_channel.edit(position=5)
+
+        # Setup Moderation Category
+        channels["category_moderation"] = await guild.create_category_channel(
+            name="Moderation",
+            overwrites=generate_overwrites(
+                interaction, roles=roles, channel="moderation"
+            ),
+        )
+
+        channels["tc_mod_commands"] = await guild.create_text_channel(
+            name="mod-commands",
+            category=channels["category_moderation"],
+            overwrites=generate_overwrites(
+                interaction, roles=roles, channel="moderation"
+            ),
+        )
+
+        channels["tc_isolation"] = await guild.create_text_channel(
+            name="isolation",
+            category=channels["category_moderation"],
+            overwrites=generate_overwrites(
+                interaction, roles=roles, channel="isolation"
+            ),
+        )
+
+        # Setup Interface Category
+        channels["category_interface"] = await guild.create_category_channel(
+            name="Interface",
+            overwrites=generate_overwrites(
+                interaction, roles=roles, channel="interface"
+            ),
+        )
+
+        channels["tc_election_feed"] = await guild.create_text_channel(
+            name="election-feed",
+            category=channels["category_interface"],
+            overwrites=generate_overwrites(
+                interaction, roles=roles, channel="interface"
+            ),
+        )
+
+        channels["tc_debate_feed"] = await guild.create_text_channel(
+            name="debate-feed",
+            category=channels["category_interface"],
+            overwrites=generate_overwrites(
+                interaction, roles=roles, channel="interface"
+            ),
+        )
+
+        channels["tc_commands"] = await guild.create_text_channel(
+            name="commands",
+            category=channels["category_interface"],
+            slowmode_delay=5,
+            overwrites=generate_overwrites(
+                interaction, roles=roles, channel="commands"
+            ),
+        )
+
+        # Setup Events Category
+        channels["category_events"] = await guild.create_category_channel(
+            name="Events",
+            overwrites=generate_overwrites(interaction, roles=roles, channel="events"),
+        )
+
+        # Setup Community Category
+        channels["category_community"] = await guild.create_category_channel(
+            name="Community",
+            overwrites=generate_overwrites(
+                interaction, roles=roles, channel="community"
+            ),
+        )
+
+        channels["tc_general"] = await guild.create_text_channel(
+            name="general",
+            category=channels["category_community"],
+            slowmode_delay=5,
+            overwrites=generate_overwrites(interaction, roles=roles, channel="general"),
+        )
+
+        channels["tc_memes"] = await guild.create_text_channel(
+            name="memes",
+            category=channels["category_community"],
+            slowmode_delay=5,
+            overwrites=generate_overwrites(
+                interaction, roles=roles, channel="community"
+            ),
+        )
+
+        # Setup Debate Category
+        channels["category_debate"] = await guild.create_category_channel(
+            name="Debate",
+            overwrites=generate_overwrites(interaction, roles=roles, channel="debate"),
+        )
+
+        # Setup Logs Category
+        channels["category_logs"] = await guild.create_category_channel(
+            name="Logs",
+            overwrites=generate_overwrites(interaction, roles=roles, channel="logs"),
+        )
+
+        channels["tc_moderator_actions"] = await guild.create_text_channel(
+            name="moderator-actions",
+            category=channels["category_logs"],
+            overwrites=generate_overwrites(interaction, roles=roles, channel="logs"),
+        )
+
+        channels["tc_message_deletion"] = await guild.create_text_channel(
+            name="message-deletion",
+            category=channels["category_logs"],
+            overwrites=generate_overwrites(interaction, roles=roles, channel="logs"),
+        )
+
+        channels["tc_message_edits"] = await guild.create_text_channel(
+            name="message-edits",
+            category=channels["category_logs"],
+            overwrites=generate_overwrites(interaction, roles=roles, channel="logs"),
+        )
+
+        channels["tc_ban_unban"] = await guild.create_text_channel(
+            name="ban-unban",
+            category=channels["category_logs"],
+            overwrites=generate_overwrites(interaction, roles=roles, channel="logs"),
+        )
+
+        channels["tc_nicknames"] = await guild.create_text_channel(
+            name="nicknames",
+            category=channels["category_logs"],
+            overwrites=generate_overwrites(interaction, roles=roles, channel="logs"),
+        )
+
+        channels["tc_join_leave"] = await guild.create_text_channel(
+            name="join-leave",
+            category=channels["category_logs"],
+            overwrites=generate_overwrites(interaction, roles=roles, channel="logs"),
+        )
+
+        channels["tc_automod"] = await guild.create_text_channel(
+            name="automod",
+            category=channels["category_logs"],
+            overwrites=generate_overwrites(interaction, roles=roles, channel="logs"),
+        )
+
+        channels["tc_channels"] = await guild.create_text_channel(
+            name="channels",
+            category=channels["category_logs"],
+            overwrites=generate_overwrites(interaction, roles=roles, channel="logs"),
+        )
+
+        channels["tc_invites"] = await guild.create_text_channel(
+            name="invites",
+            category=channels["category_logs"],
+            overwrites=generate_overwrites(interaction, roles=roles, channel="logs"),
+        )
+
+        channels["tc_roles"] = await guild.create_text_channel(
+            name="roles",
+            category=channels["category_logs"],
+            overwrites=generate_overwrites(interaction, roles=roles, channel="logs"),
+        )
+
+        channels["tc_voice"] = await guild.create_text_channel(
+            name="voice",
+            category=channels["category_logs"],
+            overwrites=generate_overwrites(interaction, roles=roles, channel="logs"),
+        )
+
+        # Create Debate Channels
+        for _channel_number in range(1, 21):
+            channels[f"vc_debate_{_channel_number}"] = await guild.create_voice_channel(
+                name=f"Debate {_channel_number}",
+                category=channels["category_debate"],
+                overwrites=generate_overwrites(
+                    interaction, roles=roles, channel="debate"
+                ),
+            )
+
+            if _channel_number != 1:
+                await channels[f"vc_debate_{_channel_number}"].edit(
+                    overwrites={
+                        roles["role_moderation_bot"]: MODERATION_BOT,
+                        roles["role_citizen"]: NEGATIVE,
+                        roles["role_member"]: NEGATIVE,
+                        roles["role_everyone"]: NEGATIVE,
+                    }
+                )
+
+            _channel_ids = {
+                f"vc_debate_{_channel_number}": channels[
+                    f"vc_debate_{_channel_number}"
+                ].id,
+            }
+            await self.bot.db.upsert(guild, **_channel_ids)
+
+        # Update Database
+        _database_entries = {
+            db_entry: channels[db_entry].id for db_entry in DB_CHANNEL_NAME_MAP.values()
+        }
+        await self.bot.db.upsert(guild, **_database_entries)
+
+        # Send Confirmation Message
+        await update(
+            interaction,
+            embed=Embed(
+                title="Channels Updated",
+                description="Channels have been successfully set up.",
+                color=0x2ECC71,
             ),
         )
 
@@ -454,15 +761,21 @@ class Migrate(commands.GroupCog, name="migrate"):
         # Assign Roles
         await guild.owner.add_roles(roles["role_the_crown"])
 
+        # Hoist Roles
+        await roles["role_champion"].edit(hoist=True)
+
         # Update Database
         await self.bot.db.upsert(
             interaction.guild,
             role_warden=roles["role_warden"].id,
             role_the_crown=roles["role_the_crown"].id,
+            role_moderation_bot=roles["role_moderation_bot"].id,
             role_chancellor=roles["role_chancellor"].id,
             role_liege=roles["role_liege"].id,
             role_prime_minister=roles["role_prime_minister"].id,
+            role_minister=roles["role_minister"].id,
             role_host=roles["role_host"].id,
+            role_champion=roles["role_champion"].id,
             role_grandmaster=roles["role_grandmaster"].id,
             role_legend=roles["role_legend"].id,
             role_master=roles["role_master"].id,
@@ -475,6 +788,7 @@ class Migrate(commands.GroupCog, name="migrate"):
             role_incompetent=roles["role_incompetent"].id,
             role_bot=roles["role_bot"].id,
             role_citizen=roles["role_citizen"].id,
+            role_member=roles["role_member"].id,
             role_events=roles["role_events"].id,
             role_logs=roles["role_logs"].id,
             role_debate_ping=roles["role_debate_ping"].id,

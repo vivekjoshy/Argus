@@ -7,6 +7,8 @@ async def update(interaction: Interaction, *args, **kwargs):
     If no initial response is sent, then it sends one.
     """
     if interaction.response.is_done():
+        if "ephemeral" in kwargs:
+            kwargs.pop("ephemeral")
         await interaction.edit_original_message(*args, **kwargs)
     else:
         await interaction.response.send_message(*args, **kwargs)
