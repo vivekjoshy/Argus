@@ -1,5 +1,7 @@
 from discord import PermissionOverwrite, Interaction
 
+from argus.constants import CHANNEL_SORT_ORDER
+
 BASE = PermissionOverwrite()
 INVITE = PermissionOverwrite(
     create_instant_invite=True,
@@ -300,7 +302,14 @@ def generate_overwrites(interaction: Interaction, roles, channel: str):
     """
     A dict of roles and their overwrites for a specific channel.
     """
-    overwrites = OVERWRITE_MAP[channel]
+    if channel.lower() not in OVERWRITE_MAP:
+        if channel not in CHANNEL_SORT_ORDER:
+            for category in CHANNEL_SORT_ORDER.keys():
+                if channel in CHANNEL_SORT_ORDER[category]:
+                    channel = category
+                    break
+
+    overwrites = OVERWRITE_MAP[channel.lower()]
     return {
         roles["role_moderation_bot"]: overwrites["role_moderation_bot"],
         roles["role_chancellor"]: overwrites["role_chancellor"],

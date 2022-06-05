@@ -12,6 +12,7 @@ from argus.constants import (
     RANK_RATING_MAP,
     ROLE_COLORS,
     DB_CHANNEL_NAME_MAP,
+    CHANNEL_SORT_ORDER,
 )
 from argus.overwrites import generate_overwrites, NEGATIVE, MODERATION_BOT
 from argus.utils import update
@@ -801,6 +802,194 @@ class Migrate(commands.GroupCog, name="migrate"):
             embed=Embed(
                 title="Roles Migrated",
                 description="Missing roles and their permissions have been set up.",
+                color=0x2ECC71,
+            ),
+        )
+
+    @app_commands.command(
+        name="channels",
+        description="Add and remove channels required by the bot. "
+        "This is a dangerous procedure that modifies the server.",
+    )
+    @check_prerequisites_enabled()
+    async def channels(self, interaction: discord.Interaction) -> None:
+        guild = self.bot.get_guild(self.bot.config["global"]["guild_id"])
+
+        await update(
+            interaction,
+            embed=Embed(
+                title="Migrating Channels",
+                description="This may take a while.",
+                color=0xF1C40F,
+            ),
+        )
+
+        # Prime Local Cache
+        roles = {}
+        for role in guild.roles:
+            if not role.managed and not role.is_default():
+                roles[DB_ROLE_NAME_MAP[role.name]] = role
+
+        # Delete Channels
+        for _category, _channels in guild.by_category():
+            if _category:
+                category_id = await self.bot.db.get(
+                    guild, DB_CHANNEL_NAME_MAP[_category.name]
+                )
+
+                for _channel in _category.channels:
+                    channel_id = await self.bot.db.get(
+                        guild, DB_CHANNEL_NAME_MAP[_channel.name]
+                    )
+                    if _channel.id != channel_id:
+                        if _channel not in [
+                            guild.rules_channel,
+                            guild.public_updates_channel,
+                        ]:
+                            await _channel.delete()
+
+                if _category.id != category_id:
+                    await _category.delete()
+            else:
+                for _channel in _channels:
+                    channel_id = await self.bot.db.get(
+                        guild, DB_CHANNEL_NAME_MAP[_channel.name]
+                    )
+                    if _channel.id != channel_id:
+                        await _channel.delete()
+
+        for _channel in guild.channels:
+            if _channel.name not in DB_CHANNEL_NAME_MAP.keys():
+                await _channel.delete()
+
+        # Create and Update Channels
+        for channel_name in DB_CHANNEL_NAME_MAP.keys():
+            _channel = discord.utils.get(guild.channels, name=channel_name)
+            if not _channel:
+                if DB_CHANNEL_NAME_MAP[channel_name].startswith("category"):
+                    await guild.create_category_channel(
+                        name=channel_name,
+                        overwrites=generate_overwrites(
+                            interaction,
+                            roles=roles,
+                            channel=DB_CHANNEL_NAME_MAP[channel_name].lstrip(
+                                "category"
+                            )[1:],
+                        ),
+                    )
+                elif DB_CHANNEL_NAME_MAP[channel_name].startswith("tc"):
+                    if channel_name == "announcements":
+                        await guild.create_text_channel(
+                            name=channel_name,
+                            overwrites=generate_overwrites(
+                                interaction,
+                                roles=roles,
+                                channel=DB_CHANNEL_NAME_MAP[channel_name].lstrip("tc")[
+                                    1:
+                                ],
+                            ),
+                            news=True,
+                        )
+                    else:
+                        await guild.create_text_channel(
+                            name=channel_name,
+                            overwrites=generate_overwrites(
+                                interaction,
+                                roles=roles,
+                                channel=DB_CHANNEL_NAME_MAP[channel_name].lstrip("tc")[
+                                    1:
+                                ],
+                            ),
+                        )
+                elif DB_CHANNEL_NAME_MAP[channel_name].startswith("vc"):
+                    if "debate" in DB_CHANNEL_NAME_MAP[channel_name]:
+                        if not DB_CHANNEL_NAME_MAP[channel_name].endswith(" 1"):
+                            await guild.create_voice_channel(
+                                name=channel_name,
+                                overwrites={
+                                    roles["role_moderation_bot"]: MODERATION_BOT,
+                                    roles["role_citizen"]: NEGATIVE,
+                                    roles["role_member"]: NEGATIVE,
+                                    guild.default_role: NEGATIVE,
+                                },
+                            )
+                        else:
+                            await guild.create_voice_channel(
+                                name=channel_name,
+                                overwrites=generate_overwrites(
+                                    interaction, roles=roles, channel="debate"
+                                ),
+                            )
+                    else:
+                        await guild.create_voice_channel(
+                            name=channel_name,
+                            overwrites=generate_overwrites(
+                                interaction,
+                                roles=roles,
+                                channel=DB_CHANNEL_NAME_MAP[channel_name].lstrip("vc")[
+                                    1:
+                                ],
+                            ),
+                        )
+            else:
+                for channel_name in DB_CHANNEL_NAME_MAP.keys():
+                    if channel_name == _channel.name:
+                        break
+
+                overwrites = generate_overwrites(
+                    interaction, roles=roles, channel=channel_name
+                )
+
+                if _channel.name.startswith("Debate"):
+                    if not _channel.name.endswith(" 1"):
+                        overwrites = {
+                            roles["role_moderation_bot"]: MODERATION_BOT,
+                            roles["role_citizen"]: NEGATIVE,
+                            roles["role_member"]: NEGATIVE,
+                            guild.default_role: NEGATIVE,
+                        }
+                        if _channel.overwrites != overwrites:
+                            await _channel.edit(overwrites=overwrites)
+                    else:
+                        if _channel.overwrites != overwrites:
+                            await _channel.edit(overwrites=overwrites)
+                else:
+                    if _channel.overwrites != overwrites:
+                        await _channel.edit(overwrites=overwrites)
+
+        # Reorder Channels
+        for category_name in CHANNEL_SORT_ORDER.keys():
+            category = discord.utils.get(guild.channels, name=category_name)
+            position = list(CHANNEL_SORT_ORDER.keys()).index(category_name)
+            await category.edit(position=position)
+
+        for category_name in CHANNEL_SORT_ORDER.keys():
+            category = discord.utils.get(guild.channels, name=category_name)
+            sorted_channels = []
+            for channel_name in CHANNEL_SORT_ORDER[category_name]:
+                channel = discord.utils.get(guild.channels, name=channel_name)
+                sorted_channels.append(channel)
+
+            if sorted_channels:
+                min_position = min(sorted_channels, key=lambda c: c.position)
+                for new_position, channel in enumerate(
+                    sorted_channels, start=min_position.position
+                ):
+                    await channel.edit(category=category, position=new_position)
+
+        # Update Database
+        _database_entries = {
+            DB_CHANNEL_NAME_MAP[db_entry.name]: db_entry.id
+            for db_entry in guild.channels
+        }
+        await self.bot.db.upsert(guild, **_database_entries)
+
+        # Send Confirmation Message
+        await update(
+            interaction,
+            embed=Embed(
+                title="Channels Migrated",
+                description="Missing channels and their permissions have been set up.",
                 color=0x2ECC71,
             ),
         )

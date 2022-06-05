@@ -46,22 +46,36 @@ DB_CHANNEL_NAME_MAP = {
     "general": "tc_general",
     "memes": "tc_memes",
     "Debate": "category_debate",
-    "Logs": "category_logs",
-    "moderator-actions": "tc_moderator_actions",
-    "message-deletion": "tc_message_deletion",
-    "message-edits": "tc_message_edits",
-    "ban-unban": "tc_ban_unban",
-    "nicknames": "tc_nicknames",
-    "join-leave": "tc_join_leave",
-    "automod": "tc_automod",
-    "channels": "tc_channels",
-    "invites": "tc_invites",
-    "roles": "tc_roles",
-    "voice": "tc_voice",
 }
 
 for _channel_number in range(1, 21):
     DB_CHANNEL_NAME_MAP[f"Debate {_channel_number}"] = f"vc_debate_{_channel_number}"
+
+DB_CHANNEL_NAME_MAP.update(
+    {
+        "Logs": "category_logs",
+        "moderator-actions": "tc_moderator_actions",
+        "message-deletion": "tc_message_deletion",
+        "message-edits": "tc_message_edits",
+        "ban-unban": "tc_ban_unban",
+        "nicknames": "tc_nicknames",
+        "join-leave": "tc_join_leave",
+        "automod": "tc_automod",
+        "channels": "tc_channels",
+        "invites": "tc_invites",
+        "roles": "tc_roles",
+        "voice": "tc_voice",
+    }
+)
+
+CHANNEL_SORT_ORDER = {}
+cached_channel_name = None
+for channel_name, db_channel_name in DB_CHANNEL_NAME_MAP.items():
+    if db_channel_name.startswith("category"):
+        CHANNEL_SORT_ORDER[channel_name] = []
+        cached_channel_name = channel_name
+    elif db_channel_name.startswith("tc") or db_channel_name.startswith("vc"):
+        CHANNEL_SORT_ORDER[cached_channel_name].append(channel_name)
 
 
 RANK_RATING_MAP = {
@@ -142,3 +156,9 @@ BOT_DESCRIPTION = "Elections and Debates for Discord Servers"
 
 # Bot Plugins Directories
 PLUGINS = ["plugins.global", "plugins.layout", "plugins.meta"]
+
+
+if __name__ == "__main__":
+    print(CHANNEL_SORT_ORDER)
+    keys = [k for k, v in CHANNEL_SORT_ORDER.items() if "memes"]
+    print(keys)

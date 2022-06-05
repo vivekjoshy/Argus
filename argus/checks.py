@@ -1,6 +1,5 @@
 from discord import app_commands, Interaction
 
-from argus.constants import DB_ROLE_NAME_MAP
 from argus.errors import UnsatisfiedRequirements
 
 
