@@ -1,9 +1,15 @@
+import sys
+
+import toml
 from schema import Optional, Or, Schema
 
 config_schema = Schema(
     {
         "bot": {
             "token": str,
+            "client_id": int,
+            "client_secret": str,
+            "redirect_url": str,
             "debug": Or(True, False),
             "log_level": Or(
                 "DEBUG",
@@ -33,3 +39,12 @@ config_schema = Schema(
     },
     ignore_extra_keys=True,
 )
+
+# Config Loader
+try:
+    config = toml.load("config.toml")
+except FileNotFoundError:
+    sys.exit()
+
+# Validate Config
+config_schema.validate(config)
