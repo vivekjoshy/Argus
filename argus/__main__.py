@@ -1,14 +1,13 @@
 import asyncio
 import sys
 
-import sentry_sdk
 import structlog_sentry_logger
 import uvicorn
 from fastapi import FastAPI
 from starlette.middleware.sessions import SessionMiddleware
 
 import argus
-from argus.client import ArgusClient
+from argus.app import bot, logger, db
 from argus.config import config
 from argus.web import api
 
@@ -25,20 +24,11 @@ try:
 except ImportError:
     pass
 
-# Logging Config
-sentry_sdk.init(config["bot"]["sentry"], traces_sample_rate=1.0)
-
-logger = structlog_sentry_logger.get_logger()
-
-# Initialize Bot
-bot = ArgusClient(config, logger)
-bot.remove_command("help")
-
-bot.logger.info(f"Starting Argus", version=argus.__version__)
-
 
 @app.on_event("startup")
 async def startup_event():
+    bot.logger.info(f"Starting Argus", version=argus.__version__)
+    bot.db = db
     asyncio.create_task(bot.start(config["bot"]["token"]))
     await asyncio.sleep(4)
 

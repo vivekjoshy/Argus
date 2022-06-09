@@ -67,6 +67,3 @@ class ArgusClient(commands.Bot):
                 self.logger.exception(f"Failed to load Plugin", extension=extension)
             except Exception as e:
                 self.logger.exception("Core Error")
-
-        # Setup Database
-        self.db = MongoClient(config=self.config)
