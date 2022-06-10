@@ -1,10 +1,12 @@
+from authlib.integrations.base_client import MismatchingStateError
 from authlib.integrations.starlette_client import OAuth
 from fastapi import APIRouter
+from fastapi_versioning import version
 from starlette.requests import Request
 
 from argus.config import config
 
-router = APIRouter(prefix="/api/v1/auth")
+router = APIRouter(prefix="/auth")
 
 oauth = OAuth()
 oauth.register(
@@ -20,13 +22,18 @@ oauth.register(
 )
 
 
-@router.get("/login")
+@router.get("/login", tags=["OAuth Login"])
+@version(1, 0)
 async def login(request: Request):
     redirect_uri = request.url_for("callback")
     return await oauth.discord.authorize_redirect(request, redirect_uri)
 
 
-@router.get("/callback")
+@router.get("/callback", tags=["OAuth Login"])
+@version(1, 0)
 async def callback(request: Request):
-    token = await oauth.discord.authorize_access_token(request)
+    try:
+        token = await oauth.discord.authorize_access_token(request)
+    except MismatchingStateError:
+        return {"Status": "Failed"}
     return dict(token)

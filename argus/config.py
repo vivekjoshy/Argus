@@ -9,7 +9,6 @@ config_schema = Schema(
             "token": str,
             "client_id": int,
             "client_secret": str,
-            "redirect_url": str,
             "debug": Or(True, False),
             "log_level": Or(
                 "DEBUG",

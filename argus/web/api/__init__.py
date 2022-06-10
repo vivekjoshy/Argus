@@ -1,1 +1,1 @@
-import argus.web.api.v1
+from argus.web.api import oauth_client

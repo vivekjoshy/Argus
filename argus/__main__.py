@@ -1,9 +1,14 @@
 import asyncio
 import sys
+import uuid
 
 import structlog_sentry_logger
 import uvicorn
 from fastapi import FastAPI
+from fastapi_versioning import VersionedFastAPI
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from slowapi.util import get_remote_address
 from starlette.middleware.sessions import SessionMiddleware
 
 import argus
@@ -11,10 +16,19 @@ from argus.app import bot, logger, db
 from argus.config import config
 from argus.web import api
 
+
 # Create App Instance
-app = FastAPI(title="Argus", version=argus.__version__)
-app.add_middleware(SessionMiddleware, secret_key=config["bot"]["secret_key"])
-app.include_router(api.v1.oauth_client.router)
+limiter = Limiter(key_func=get_remote_address, default_limits=["5/second"])
+app = FastAPI(
+    title="Argus",
+    description="Elections and Debates for Discord Servers",
+    version=argus.__version__,
+)
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+app.include_router(argus.web.api.oauth_client.router)
+app = VersionedFastAPI(app=app, prefix_format="/api/v{major}.{minor}")
+app.add_middleware(SessionMiddleware, secret_key=str(uuid.uuid4().hex))
 
 # Faster Event Loop
 try:
@@ -30,7 +44,7 @@ async def startup_event():
     bot.logger.info(f"Starting Argus", version=argus.__version__)
     bot.db = db
     asyncio.create_task(bot.start(config["bot"]["token"]))
-    await asyncio.sleep(4)
+    await asyncio.sleep(3)
 
 
 @app.on_event("shutdown")
