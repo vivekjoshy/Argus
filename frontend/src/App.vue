@@ -19,7 +19,7 @@ import {
     NGlobalStyle,
     NNotificationProvider,
 } from "naive-ui";
-import { themeStore } from "@/stores/global";
+import { themeStore } from "@/stores/theme";
 
 export default defineComponent({
     name: "GlobalApp",
@@ -31,9 +31,7 @@ export default defineComponent({
     setup() {
         const store = themeStore();
         const themeOverrides = store.getOverrides;
-        const getTheme = computed(() =>
-            store.darkTheme ? darkTheme : undefined
-        );
+        const getTheme = computed(() => (store.dark ? darkTheme : undefined));
         return { themeOverrides, getTheme };
     },
 });

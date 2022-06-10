@@ -6,7 +6,7 @@
                     <n-button
                         type="primary"
                         icon-placement="left"
-                        @click="$router.push('login')"
+                        @click="authentication"
                     >
                         <template #icon>
                             <div v-if="isLoggedIn">
@@ -29,22 +29,39 @@
 </template>
 
 <script lang="ts">
-import { defineComponent } from "vue";
+import { defineComponent, inject } from "vue";
 import { NButton, NIcon, NSpace } from "naive-ui";
 import { Login, Logout } from "@vicons/tabler";
+
 export default defineComponent({
     name: "GlobalNavigation",
     components: { NButton, NSpace, Login, Logout, NIcon },
     props: ["isLoggedIn"],
     setup(props) {
+        const axios: any = inject("axios");
         function loginText(): string {
             if (props.isLoggedIn) {
-                return "Login";
-            } else {
                 return "Logout";
+            } else {
+                return "Login";
             }
         }
-        return { loginText };
+
+        function authentication(): void {
+            if (props.isLoggedIn) {
+                axios
+                    .get(`${window.location.origin}/api/v1.0/auth/logout`)
+                    .then((response: any) => {
+                        window.location.href = `${window.location.origin}`;
+                    })
+                    .catch((error: any) => {
+                        window.location.href = `${window.location.origin}`;
+                    });
+            } else {
+                window.location.href = `${window.location.origin}/api/v1.0/auth/login`;
+            }
+        }
+        return { loginText, authentication };
     },
 });
 </script>

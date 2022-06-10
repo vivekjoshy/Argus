@@ -11,7 +11,7 @@ from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from starlette.middleware.sessions import SessionMiddleware
 from starlette.requests import Request
-from starlette.responses import FileResponse
+from starlette.responses import FileResponse, Response
 from starlette.staticfiles import StaticFiles
 
 import argus
@@ -47,6 +47,7 @@ app.mount("/static", StaticFiles(directory=f"{static_folder}"), name="static")
 @app.get("/", response_class=FileResponse)
 def read_index(request: Request):
     index = f"{static_folder}/index.html"
+    token = request.session.get("token")
     return FileResponse(index)
 
 
