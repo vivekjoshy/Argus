@@ -6,19 +6,16 @@ import structlog_sentry_logger
 import uvicorn
 from fastapi import FastAPI
 from fastapi_versioning import VersionedFastAPI
-from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
-from slowapi.util import get_remote_address
 from starlette.middleware.sessions import SessionMiddleware
 
 import argus
-from argus.app import bot, logger, db
+from argus.app import bot, logger, db, limiter
 from argus.config import config
 from argus.web import api
 
-
 # Create App Instance
-limiter = Limiter(key_func=get_remote_address, default_limits=["5/second"])
 app = FastAPI(
     title="Argus",
     description="Elections and Debates for Discord Servers",
