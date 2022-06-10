@@ -1,4 +1,5 @@
 import asyncio
+import os
 import sys
 import uuid
 
@@ -9,6 +10,9 @@ from fastapi_versioning import VersionedFastAPI
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from starlette.middleware.sessions import SessionMiddleware
+from starlette.requests import Request
+from starlette.responses import FileResponse
+from starlette.staticfiles import StaticFiles
 
 import argus
 from argus.app import bot, logger, db, limiter
@@ -34,6 +38,28 @@ try:
     asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
 except ImportError:
     pass
+
+# Mount Files
+static_folder = "frontend/dist/"
+app.mount("/static", StaticFiles(directory=f"{static_folder}"), name="static")
+
+
+@app.get("/", response_class=FileResponse)
+def read_index(request: Request):
+    index = f"{static_folder}/index.html"
+    return FileResponse(index)
+
+
+@app.get("/{catchall:path}", response_class=FileResponse)
+def read_index(request: Request):
+    path = request.path_params["catchall"]
+    file = static_folder + path
+
+    if os.path.exists(file):
+        return FileResponse(file)
+
+    index = f"{static_folder}/index.html"
+    return FileResponse(index)
 
 
 @app.on_event("startup")
