@@ -11,4 +11,7 @@ export default {
         tableColor: "#272D40FF",
         modalColor: "#2F364CFF",
     },
+    Menu: {
+        itemColorHover: "rgba(255, 255, 255, 0)",
+    },
 };

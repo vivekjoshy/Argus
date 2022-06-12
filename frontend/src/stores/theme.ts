@@ -18,4 +18,9 @@ export const themeStore = defineStore("main", {
             }
         },
     },
+    actions: {
+        switchTheme() {
+            this.dark = !this.dark;
+        },
+    },
 });

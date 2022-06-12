@@ -34,4 +34,10 @@ export default defineComponent({
 });
 </script>
 
-<style lang="scss"></style>
+<style lang="scss">
+.home {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+</style>
