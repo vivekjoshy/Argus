@@ -4,7 +4,6 @@ import discord
 from discord.ext import commands
 
 from argus.constants import BOT_DESCRIPTION, PLUGINS
-from argus.db.mongo import MongoClient
 
 
 class ArgusClient(commands.Bot):

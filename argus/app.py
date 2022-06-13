@@ -1,5 +1,6 @@
 import sentry_sdk
 import structlog_sentry_logger
+from odmantic import AIOEngine
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 
@@ -16,6 +17,7 @@ limiter = Limiter(key_func=get_remote_address, default_limits=["5/second"])
 
 # Setup Database
 db = MongoClient(config=config)
+engine = AIOEngine(motor_client=db, database=config["database"]["database"])
 
 # Initialize Bot
 bot = ArgusClient(config, logger)

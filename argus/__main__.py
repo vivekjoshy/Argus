@@ -11,11 +11,11 @@ from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from starlette.middleware.sessions import SessionMiddleware
 from starlette.requests import Request
-from starlette.responses import FileResponse, Response
+from starlette.responses import FileResponse
 from starlette.staticfiles import StaticFiles
 
 import argus
-from argus.app import bot, logger, db, limiter
+from argus.app import bot, logger, db, limiter, engine
 from argus.config import config
 from argus.web import api
 
@@ -67,6 +67,7 @@ def read_index(request: Request):
 async def startup_event():
     bot.logger.info(f"Starting Argus", version=argus.__version__)
     bot.db = db
+    bot.engine = engine
     asyncio.create_task(bot.start(config["bot"]["token"]))
     await asyncio.sleep(3)
 

@@ -303,8 +303,9 @@ def generate_overwrites(interaction: Interaction, roles, channel: str):
     A dict of roles and their overwrites for a specific channel.
     """
     if channel.lower() not in OVERWRITE_MAP:
-        if channel not in CHANNEL_SORT_ORDER:
+        if channel not in CHANNEL_SORT_ORDER.keys():
             for category in CHANNEL_SORT_ORDER.keys():
+                channel = channel.replace("_", "-")
                 if channel in CHANNEL_SORT_ORDER[category]:
                     channel = category
                     break

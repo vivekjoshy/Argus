@@ -14,6 +14,7 @@ from argus.constants import (
     DB_CHANNEL_NAME_MAP,
     CHANNEL_SORT_ORDER,
 )
+from argus.models.guild import GuildModel
 from argus.overwrites import generate_overwrites, NEGATIVE, MODERATION_BOT
 from argus.utils import update
 
@@ -46,6 +47,7 @@ class Setup(commands.GroupCog, name="setup"):
             "role_incompetent": None,
             "role_bot": None,
             "role_citizen": None,
+            "role_member": None,
             "role_events": None,
             "role_logs": None,
             "role_debate_ping": None,
@@ -124,13 +126,13 @@ class Setup(commands.GroupCog, name="setup"):
         # Setup Basic Permissions
         roles["role_everyone"] = interaction.guild.default_role
         await roles["role_everyone"].edit(
-            permissions=Permissions(permissions=2184252480)
+            permissions=Permissions(permissions=ROLE_PERMISSIONS["role_everyone"])
         )
 
         # Setup Power Roles
         roles["role_warden"] = await interaction.guild.create_role(
             name="Warden",
-            permissions=Permissions(permissions=8),
+            permissions=Permissions(permissions=ROLE_PERMISSIONS["role_warden"]),
             colour=0xEB6A5C,
             hoist=False,
         )
@@ -139,155 +141,185 @@ class Setup(commands.GroupCog, name="setup"):
         roles["role_the_crown"] = await interaction.guild.create_role(
             name="The Crown",
             colour=0xD4AF37,
-            permissions=Permissions(permissions=0),
+            permissions=Permissions(permissions=ROLE_PERMISSIONS["role_the_crown"]),
             hoist=False,
         )
         await interaction.guild.owner.add_roles(roles["role_the_crown"])
 
         roles["role_moderation_bot"] = await interaction.guild.create_role(
             name="Moderation Bot",
-            permissions=Permissions(permissions=1089042513857),
+            permissions=Permissions(
+                permissions=ROLE_PERMISSIONS["role_moderation_bot"]
+            ),
             hoist=False,
         )
 
         roles["role_chancellor"] = await interaction.guild.create_role(
             name="Chancellor",
             colour=0x9B59B6,
-            permissions=Permissions(permissions=1098639081441),
+            permissions=Permissions(permissions=ROLE_PERMISSIONS["role_chancellor"]),
             hoist=False,
         )
 
         roles["role_liege"] = await interaction.guild.create_role(
             name="Liege",
             colour=0xE67E22,
-            permissions=Permissions(permissions=1098639081409),
+            permissions=Permissions(permissions=ROLE_PERMISSIONS["role_liege"]),
             hoist=False,
         )
 
         roles["role_prime_minister"] = await interaction.guild.create_role(
             name="Prime Minister",
             colour=0xE74C3C,
-            permissions=Permissions(permissions=1097564815169),
+            permissions=Permissions(
+                permissions=ROLE_PERMISSIONS["role_prime_minister"]
+            ),
             hoist=False,
         )
 
         roles["role_minister"] = await interaction.guild.create_role(
             name="Minister",
             colour=0x2ECC71,
-            permissions=Permissions(permissions=1097564815169),
+            permissions=Permissions(permissions=ROLE_PERMISSIONS["role_minister"]),
             hoist=False,
         )
 
         # Selective Permissions
         roles["role_host"] = await interaction.guild.create_role(
-            name="Host", permissions=Permissions(permissions=0), hoist=False
+            name="Host",
+            permissions=Permissions(permissions=ROLE_PERMISSIONS["role_host"]),
+            hoist=False,
         )
 
         # Event Roles
         roles["role_champion"] = await interaction.guild.create_role(
-            name="Champion", permissions=Permissions(permissions=0), hoist=True
+            name="Champion",
+            permissions=Permissions(permissions=ROLE_PERMISSIONS["role_champion"]),
+            hoist=True,
         )
 
         # Setup Rated Roles
         roles["role_grandmaster"] = await interaction.guild.create_role(
-            name="Grandmaster", permissions=Permissions(permissions=0), hoist=True
+            name="Grandmaster",
+            permissions=Permissions(permissions=ROLE_PERMISSIONS["role_grandmaster"]),
+            hoist=True,
         )
 
         roles["role_legend"] = await interaction.guild.create_role(
-            name="Legend", permissions=Permissions(permissions=0), hoist=True
+            name="Legend",
+            permissions=Permissions(permissions=ROLE_PERMISSIONS["role_legend"]),
+            hoist=True,
         )
 
         roles["role_master"] = await interaction.guild.create_role(
-            name="Master", permissions=Permissions(permissions=0), hoist=True
+            name="Master",
+            permissions=Permissions(permissions=ROLE_PERMISSIONS["role_master"]),
+            hoist=True,
         )
 
         roles["role_expert"] = await interaction.guild.create_role(
-            name="Expert", permissions=Permissions(permissions=0), hoist=True
+            name="Expert",
+            permissions=Permissions(permissions=ROLE_PERMISSIONS["role_expert"]),
+            hoist=True,
         )
 
         roles["role_distinguished"] = await interaction.guild.create_role(
-            name="Distinguished", permissions=Permissions(permissions=0), hoist=True
+            name="Distinguished",
+            permissions=Permissions(permissions=ROLE_PERMISSIONS["role_distinguished"]),
+            hoist=True,
         )
 
         roles["role_apprentice"] = await interaction.guild.create_role(
-            name="Apprentice", permissions=Permissions(permissions=0), hoist=True
+            name="Apprentice",
+            permissions=Permissions(permissions=ROLE_PERMISSIONS["role_apprentice"]),
+            hoist=True,
         )
 
         roles["role_novice"] = await interaction.guild.create_role(
-            name="Novice", permissions=Permissions(permissions=0), hoist=True
+            name="Novice",
+            permissions=Permissions(permissions=ROLE_PERMISSIONS["role_novice"]),
+            hoist=True,
         )
 
         roles["role_initiate"] = await interaction.guild.create_role(
-            name="Initiate", permissions=Permissions(permissions=0), hoist=True
+            name="Initiate",
+            permissions=Permissions(permissions=ROLE_PERMISSIONS["role_initiate"]),
+            hoist=True,
         )
 
         roles["role_rookie"] = await interaction.guild.create_role(
-            name="Rookie", permissions=Permissions(permissions=0), hoist=True
+            name="Rookie",
+            permissions=Permissions(permissions=ROLE_PERMISSIONS["role_rookie"]),
+            hoist=True,
         )
 
         roles["role_incompetent"] = await interaction.guild.create_role(
-            name="Incompetent", permissions=Permissions(permissions=0), hoist=True
+            name="Incompetent",
+            permissions=Permissions(permissions=ROLE_PERMISSIONS["role_incompetent"]),
+            hoist=True,
         )
 
         # Bot Roles
         roles["role_bot"] = await interaction.guild.create_role(
-            name="Bot", permissions=Permissions(permissions=0), hoist=True
+            name="Bot",
+            permissions=Permissions(permissions=ROLE_PERMISSIONS["role_bot"]),
+            hoist=True,
         )
         await interaction.guild.me.add_roles(roles["role_bot"])
 
         # Membership Roles
         roles["role_citizen"] = await interaction.guild.create_role(
-            name="Citizen", permissions=Permissions(permissions=2251673153), hoist=False
+            name="Citizen",
+            permissions=Permissions(permissions=ROLE_PERMISSIONS["role_citizen"]),
+            hoist=False,
+        )
+
+        roles["role_member"] = await interaction.guild.create_role(
+            name="Member",
+            permissions=Permissions(permissions=ROLE_PERMISSIONS["role_member"]),
+            hoist=False,
         )
 
         # Optional Roles
         roles["role_logs"] = await interaction.guild.create_role(
-            name="Logs", permissions=Permissions(permissions=0), hoist=False
+            name="Logs",
+            permissions=Permissions(permissions=ROLE_PERMISSIONS["role_logs"]),
+            hoist=False,
         )
 
         roles["role_events"] = await interaction.guild.create_role(
-            name="Events", permissions=Permissions(permissions=0), hoist=False
+            name="Events",
+            permissions=Permissions(permissions=ROLE_PERMISSIONS["role_events"]),
+            hoist=False,
         )
 
         roles["role_debate_ping"] = await interaction.guild.create_role(
-            name="Debate Ping", permissions=Permissions(permissions=0), hoist=False
+            name="Debate Ping",
+            permissions=Permissions(permissions=ROLE_PERMISSIONS["role_debate_ping"]),
+            hoist=False,
         )
 
         # Punishment Roles
         roles["role_detained"] = await interaction.guild.create_role(
-            name="Detained", permissions=Permissions(permissions=0), hoist=False
+            name="Detained",
+            permissions=Permissions(permissions=ROLE_PERMISSIONS["role_detained"]),
+            hoist=False,
         )
 
         # Update Database
-        await self.bot.db.upsert(
-            interaction.guild,
-            role_warden=roles["role_warden"].id,
-            role_the_crown=roles["role_the_crown"].id,
-            role_moderation_bot=roles["role_moderation_bot"].id,
-            role_chancellor=roles["role_chancellor"].id,
-            role_liege=roles["role_liege"].id,
-            role_prime_minister=roles["role_prime_minister"].id,
-            role_minister=roles["role_minister"].id,
-            role_host=roles["role_host"].id,
-            role_champion=roles["role_champion"].id,
-            role_grandmaster=roles["role_grandmaster"].id,
-            role_legend=roles["role_legend"].id,
-            role_master=roles["role_master"].id,
-            role_expert=roles["role_expert"].id,
-            role_distinguished=roles["role_distinguished"].id,
-            role_apprentice=roles["role_apprentice"].id,
-            role_novice=roles["role_novice"].id,
-            role_initiate=roles["role_initiate"].id,
-            role_rookie=roles["role_rookie"].id,
-            role_incompetent=roles["role_incompetent"].id,
-            role_bot=roles["role_bot"].id,
-            role_citizen=roles["role_citizen"].id,
-            role_member=roles["role_member"].id,
-            role_events=roles["role_events"].id,
-            role_logs=roles["role_logs"].id,
-            role_debate_ping=roles["role_debate_ping"].id,
-            role_detained=roles["role_detained"].id,
-        )
+        persisted_roles = dict(roles)
+        if "role_everyone" in persisted_roles:
+            persisted_roles.pop("role_everyone")
+        db_guilds = await self.bot.engine.find(GuildModel)
+        if len(db_guilds) > 0:
+            for db_guild in db_guilds[1:]:
+                await self.bot.engine.delete(db_guild)
+            guild_instance = db_guilds[0]
+            guild_instance.roles = persisted_roles
+            await self.bot.engine.save(guild_instance)
+        else:
+            guild_instance = GuildModel(guild=interaction.guild, roles=persisted_roles)
+            await self.bot.engine.save(guild_instance)
 
         # Update State
         self.bot.state["roles_are_setup"] = True
@@ -311,18 +343,21 @@ class Setup(commands.GroupCog, name="setup"):
                 self.bot.state["map_roles"][DB_ROLE_NAME_MAP[role.name]] = role
 
         # Check Roles Exist in Database
+        db_guilds = await self.bot.engine.find(GuildModel)
+        db_roles = db_guilds[0].roles
+
         for role in guild.roles[1:]:
             if not role.managed:
-                db_role_id = await self.bot.db.get(
-                    guild, state=f"{DB_ROLE_NAME_MAP[role.name]}"
-                )
+                db_role_id = interaction.guild.get_role(
+                    db_roles[DB_ROLE_NAME_MAP[role.name]]
+                ).id
                 if not db_role_id:
                     await update(
                         interaction,
                         embed=Embed(
                             title=f"Roles Missing",
                             description="Please run the setup of roles again. "
-                            "Roles in this server were never added to the database",
+                            "Roles in the database are missing from the server.",
                             color=0xE74C3C,
                         ),
                         ephemeral=True,
@@ -607,6 +642,7 @@ class Setup(commands.GroupCog, name="setup"):
         )
 
         # Create Debate Channels
+        db_vc_channels = {}
         for _channel_number in range(1, 21):
             channels[f"vc_debate_{_channel_number}"] = await guild.create_voice_channel(
                 name=f"Debate {_channel_number}",
@@ -626,18 +662,27 @@ class Setup(commands.GroupCog, name="setup"):
                     }
                 )
 
-            _channel_ids = {
-                f"vc_debate_{_channel_number}": channels[
-                    f"vc_debate_{_channel_number}"
-                ].id,
-            }
-            await self.bot.db.upsert(guild, **_channel_ids)
+            db_vc_channels[f"vc_debate_{_channel_number}"] = channels[
+                f"vc_debate_{_channel_number}"
+            ].id
 
         # Update Database
         _database_entries = {
             db_entry: channels[db_entry].id for db_entry in DB_CHANNEL_NAME_MAP.values()
         }
-        await self.bot.db.upsert(guild, **_database_entries)
+        _database_entries.update(db_vc_channels)
+        db_guilds = await self.bot.engine.find(GuildModel)
+        if len(db_guilds) > 0:
+            for db_guild in db_guilds[1:]:
+                await self.bot.engine.delete(db_guild)
+            guild_instance = db_guilds[0]
+            guild_instance.channels = _database_entries
+            await self.bot.engine.save(guild_instance)
+        else:
+            guild_instance = GuildModel(
+                guild=interaction.guild, channels=_database_entries
+            )
+            await self.bot.engine.save(guild_instance)
 
         # Send Confirmation Message
         await update(
@@ -765,36 +810,20 @@ class Migrate(commands.GroupCog, name="migrate"):
         # Hoist Roles
         await roles["role_champion"].edit(hoist=True)
 
-        # Update Database
-        await self.bot.db.upsert(
-            interaction.guild,
-            role_warden=roles["role_warden"].id,
-            role_the_crown=roles["role_the_crown"].id,
-            role_moderation_bot=roles["role_moderation_bot"].id,
-            role_chancellor=roles["role_chancellor"].id,
-            role_liege=roles["role_liege"].id,
-            role_prime_minister=roles["role_prime_minister"].id,
-            role_minister=roles["role_minister"].id,
-            role_host=roles["role_host"].id,
-            role_champion=roles["role_champion"].id,
-            role_grandmaster=roles["role_grandmaster"].id,
-            role_legend=roles["role_legend"].id,
-            role_master=roles["role_master"].id,
-            role_expert=roles["role_expert"].id,
-            role_distinguished=roles["role_distinguished"].id,
-            role_apprentice=roles["role_apprentice"].id,
-            role_novice=roles["role_novice"].id,
-            role_initiate=roles["role_initiate"].id,
-            role_rookie=roles["role_rookie"].id,
-            role_incompetent=roles["role_incompetent"].id,
-            role_bot=roles["role_bot"].id,
-            role_citizen=roles["role_citizen"].id,
-            role_member=roles["role_member"].id,
-            role_events=roles["role_events"].id,
-            role_logs=roles["role_logs"].id,
-            role_debate_ping=roles["role_debate_ping"].id,
-            role_detained=roles["role_detained"].id,
-        )
+        persisted_roles = dict(roles)
+        if "role_everyone" in persisted_roles:
+            persisted_roles.pop("role_everyone")
+
+        db_guilds = await self.bot.engine.find(GuildModel)
+        if len(db_guilds) > 0:
+            for db_guild in db_guilds[1:]:
+                await self.bot.engine.delete(db_guild)
+            guild_instance = db_guilds[0]
+            guild_instance.roles = persisted_roles
+            await self.bot.engine.save(guild_instance)
+        else:
+            guild_instance = GuildModel(guild=interaction.guild, roles=persisted_roles)
+            await self.bot.engine.save(guild_instance)
 
         # Send Confirmation Message
         await update(
@@ -831,16 +860,14 @@ class Migrate(commands.GroupCog, name="migrate"):
                 roles[DB_ROLE_NAME_MAP[role.name]] = role
 
         # Delete Channels
+        db_guilds = await self.bot.engine.find(GuildModel)
+        guild_instance = db_guilds[0]
+        channels = guild_instance.channels
         for _category, _channels in guild.by_category():
             if _category:
-                category_id = await self.bot.db.get(
-                    guild, DB_CHANNEL_NAME_MAP[_category.name]
-                )
-
+                category_id = channels[DB_CHANNEL_NAME_MAP[_category.name]]
                 for _channel in _category.channels:
-                    channel_id = await self.bot.db.get(
-                        guild, DB_CHANNEL_NAME_MAP[_channel.name]
-                    )
+                    channel_id = channels[DB_CHANNEL_NAME_MAP[_channel.name]]
                     if _channel.id != channel_id:
                         if _channel not in [
                             guild.rules_channel,
@@ -852,9 +879,7 @@ class Migrate(commands.GroupCog, name="migrate"):
                     await _category.delete()
             else:
                 for _channel in _channels:
-                    channel_id = await self.bot.db.get(
-                        guild, DB_CHANNEL_NAME_MAP[_channel.name]
-                    )
+                    channel_id = channels[DB_CHANNEL_NAME_MAP[_channel.name]]
                     if _channel.id != channel_id:
                         await _channel.delete()
 
@@ -979,10 +1004,20 @@ class Migrate(commands.GroupCog, name="migrate"):
 
         # Update Database
         _database_entries = {
-            DB_CHANNEL_NAME_MAP[db_entry.name]: db_entry.id
-            for db_entry in guild.channels
+            DB_CHANNEL_NAME_MAP[db_entry.name]: db_entry for db_entry in guild.channels
         }
-        await self.bot.db.upsert(guild, **_database_entries)
+        db_guilds = await self.bot.engine.find(GuildModel)
+        if len(db_guilds) > 0:
+            for db_guild in db_guilds[1:]:
+                await self.bot.engine.delete(db_guild)
+            guild_instance = db_guilds[0]
+            guild_instance.channels = _database_entries
+            await self.bot.engine.save(guild_instance)
+        else:
+            guild_instance = GuildModel(
+                guild=interaction.guild, channels=_database_entries
+            )
+            await self.bot.engine.save(guild_instance)
 
         # Send Confirmation Message
         await update(
