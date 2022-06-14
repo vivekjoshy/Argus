@@ -1,4 +1,4 @@
-from discord import Role, Guild
+from discord import Role, Guild, Member
 from discord.abc import GuildChannel
 
 from argus.app import bot
@@ -51,3 +51,18 @@ class DiscordChannel(int):
             return v
         else:
             return ValueError(f"Channel IDs must be of type `int`.")
+
+
+class DiscordMember(int):
+    @classmethod
+    def __get_validators__(cls):
+        yield cls.validate
+
+    @classmethod
+    def validate(cls, v):
+        if isinstance(v, Member):
+            return int(v.id)
+        if isinstance(v, int):
+            return v
+        else:
+            return ValueError(f"Member IDs must be of type `int`.")

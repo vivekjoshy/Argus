@@ -14,7 +14,7 @@ from argus.constants import (
     DB_CHANNEL_NAME_MAP,
     CHANNEL_SORT_ORDER,
 )
-from argus.models.guild import GuildModel
+from argus.db.models.guild import GuildModel
 from argus.overwrites import generate_overwrites, NEGATIVE, MODERATION_BOT
 from argus.utils import update
 

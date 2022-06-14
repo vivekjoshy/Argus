@@ -155,7 +155,7 @@ ROLE_COLORS = {
 BOT_DESCRIPTION = "Elections and Debates for Discord Servers"
 
 # Bot Plugins Directories
-PLUGINS = ["plugins.global", "plugins.layout", "plugins.meta"]
+PLUGINS = ["plugins.global", "plugins.layout", "plugins.meta", "plugins.security"]
 
 
 if __name__ == "__main__":

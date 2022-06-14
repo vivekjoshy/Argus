@@ -2,7 +2,7 @@ from typing import Dict, Optional
 
 from odmantic import Model, Field
 
-from argus.models import DiscordGuild, DiscordRole, DiscordChannel
+from argus.db.models import DiscordGuild, DiscordRole, DiscordChannel
 
 
 class GuildModel(Model):
