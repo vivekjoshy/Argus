@@ -1,8 +1,9 @@
 import datetime
-from typing import Optional, Tuple, List, Union
+from typing import Optional, Tuple, List
 
 import discord
 import openskill
+from discord import VoiceChannel, Member
 
 
 class DebateTopic:
@@ -11,9 +12,8 @@ class DebateTopic:
     ):
         self.author = member
         self.message = message
-        self.voters = [self.author.id]
+        self.voters = [self.author]
         self.prioritized = False
-        self.text_based = text_based
         self.created_at = datetime.datetime.utcnow()
 
     def __repr__(self):
@@ -22,14 +22,12 @@ class DebateTopic:
                 f'Topic(author="{self.author}", '
                 f'votes="{self.votes}", '
                 f'prioritized="{self.prioritized}", '
-                f'text_based="{self.text_based}" '
                 f'message="{self.message}")'
             )
         else:
             representation = (
                 f'Topic(author="{self.author}", '
                 f'votes="{self.votes}",'
-                f'text_based="{self.text_based}" '
                 f'message="{self.message}")'
             )
         return representation
@@ -48,12 +46,12 @@ class DebateTopic:
             return len(self.voters)
 
     def add_voter(self, member):
-        if member.id not in self.voters:
-            self.voters.append(member.id)
+        if member not in self.voters:
+            self.voters.append(member)
 
     def remove_voter(self, member):
-        if member.id in self.voters:
-            self.voters.remove(member.id)
+        if member in self.voters:
+            self.voters.remove(member)
 
 
 class DebateParticipant:
@@ -61,7 +59,7 @@ class DebateParticipant:
         self, member: discord.Member, mu, sigma, session_start: datetime.datetime
     ):
         self.member = member
-        self.id = member.id
+        self.id = member
         self.debater = False
         self.votes: List[DebateParticipant] = []
         self.place = None
@@ -171,14 +169,14 @@ class DebateMatch:
     def remove_participant(self, member: discord.Member):
         """Remove a participant by passing a discord.Member object"""
         for m in self.participants:
-            if m.id == member.id:
+            if m.id == member:
                 if not m.debater:
                     self.participants.remove(m)
 
     def check_participant(self, member: discord.Member):
         """Check if a member is an active participant."""
         for m in self.participants:
-            if m.id == member.id:
+            if m.id == member:
                 return True
         return False
 
@@ -186,7 +184,7 @@ class DebateMatch:
         """Check is a voter switched their position."""
         checked_member = self.get_participant(member)
         for debater in self.get_debaters():
-            if checked_member.id in [v.id for v in debater.votes]:
+            if checked_member in [v.id for v in debater.votes]:
                 if checked_member.against == debater.against:
                     return False
                 else:
@@ -198,7 +196,7 @@ class DebateMatch:
             self.session_start = datetime.datetime.utcnow()
 
         for m in self.participants:
-            if m.id == member.id:
+            if m.id == member:
                 m.debater = True
                 m.session_start = datetime.datetime.utcnow()
                 break
@@ -238,12 +236,12 @@ class DebateMatch:
     def get_debater(self, member: discord.Member):
         debaters = self.get_debaters()
         for d in debaters:
-            if d.id == member.id:
+            if d.id == member:
                 return d
 
     def get_participant(self, member: discord.Member):
         for p in self.participants:
-            if p.id == member.id:
+            if p.id == member:
                 return p
 
     def calculate_places(self):
@@ -290,26 +288,25 @@ class DebateMatch:
 
 
 class DebateRoom:
-    def __init__(self, number: int, tc_id: int, vc_id: int):
+    def __init__(self, number: int, vc: VoiceChannel):
         self.number = number
-        self.tc_id: int = tc_id
-        self.vc_id: int = vc_id
+        self.vc: VoiceChannel = vc
 
         # Dynamic
         self.topics: List[DebateTopic] = []
         self._topic_voters: List[discord.Member] = []
         self.match: Optional[DebateMatch] = None
-        self._conclude_voters: List[int] = []
+        self._conclude_voters: List[Member] = []
         self.current_topic: Optional[DebateTopic] = None
 
         # Studio Variables
         self.studio = False
-        self.studio_engineer: Optional[int] = None
-        self.studio_participants: List[int] = []
+        self.studio_engineer: Optional[Member] = None
+        self.studio_participants: List[Member] = []
 
         # Private Match
         self.private = False
-        self.private_debaters: List[int] = []
+        self.private_debaters: List[Member] = []
 
         # Progress State
         self.updating_topic = False
@@ -332,29 +329,17 @@ class DebateRoom:
     def __eq__(self, other):
         return self.number == other.number
 
-    def number_from_channel(
-        self, channel: Union[discord.TextChannel, discord.VoiceChannel]
-    ) -> Optional[int]:
+    def number_from_channel(self, channel: discord.VoiceChannel) -> Optional[int]:
         """Get the number of a DebateRoom instance."""
-        if channel.id in [self.tc_id, self.vc_id]:
+        if channel == self.vc:
             return self.number
         else:
             return None
 
-    def tc_from_vc(self, vc: discord.VoiceChannel):
-        """Get a TextChannel from a VoiceChannel."""
-        if vc.id == self.vc_id:
-            return self.tc_id
-
-    def vc_from_tc(self, tc: discord.TextChannel):
-        """Get a VoiceChannel from a TextChannel."""
-        if tc.id == self.tc_id:
-            return self.vc_id
-
-    def get_topic_members(self) -> List[int]:
-        """Generate the unique Member ids of all Topics."""
+    def get_topic_members(self) -> List[Member]:
+        """Generate the unique Members of all Topics."""
         if self.topics:
-            return [topic.author.id for topic in self.topics]
+            return [topic.author for topic in self.topics]
         else:
             return []
 
@@ -363,7 +348,7 @@ class DebateRoom:
     def topic_from_member(self, member: discord.Member) -> Optional[DebateTopic]:
         """Get a Topic from a Member."""
         if self.topics:
-            topic = [t for t in self.topics if t.author.id == member.id]
+            topic = [t for t in self.topics if t.author == member]
             if len(topic) > 0:
                 return topic[0]
 
@@ -407,7 +392,7 @@ class DebateRoom:
         """Removes priority from topic based on topic author."""
         if self.topics:
             for topic in self.topics:
-                if topic.author.id == author.id:
+                if topic.author == author:
                     topic.prioritized = False
 
     def add_topic(self, topic: DebateTopic) -> bool:
@@ -418,8 +403,8 @@ class DebateRoom:
         True
             Topic was updated instead of inserted.
         """
-        if topic.author.id in self.get_topic_members():
-            index = self.get_topic_members().index(topic.author.id)
+        if topic.author in self.get_topic_members():
+            index = self.get_topic_members().index(topic.author)
             self.remove_voter_from_topics(topic.author)
             self.topics[index] = topic
             return True
@@ -494,10 +479,10 @@ class DebateRoom:
         if topic:
             self.topics.remove(topic)
 
-    def remove_obsolete_topics(self, voice_state):
+    def remove_obsolete_topics(self):
         """Remove all topics that hit 0 votes and the author is not in the room."""
         for topic in self.topics:
-            if topic.votes == 0 and topic.author.id not in list(voice_state.keys()):
+            if topic.votes == 0 and topic.author not in self.vc.members:
                 if topic == self.current_topic:
                     self.current_topic = None
                 self.topics.remove(topic)
@@ -553,8 +538,8 @@ class DebateRoom:
     ) -> Tuple[Optional[List[DebateParticipant]], Optional[bool], Optional[bool]]:
         if self.match:
             if self.match.check_participant(voter):
-                if voter.id not in self._conclude_voters:
-                    self._conclude_voters.append(voter.id)
+                if voter not in self._conclude_voters:
+                    self._conclude_voters.append(voter)
 
             if len(self.match.participants) < 1:
                 if self.match.check_voters():

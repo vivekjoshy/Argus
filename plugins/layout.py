@@ -6,6 +6,7 @@ from discord.ext import commands
 
 from argus.checks import check_prerequisites_enabled
 from argus.client import ArgusClient
+from argus.common import check_roles_exist, check_level_2
 from argus.constants import (
     DB_ROLE_NAME_MAP,
     ROLE_PERMISSIONS,
@@ -46,6 +47,7 @@ class Setup(commands.GroupCog, name="setup"):
             "role_rookie": None,
             "role_incompetent": None,
             "role_bot": None,
+            "role_judge": None,
             "role_citizen": None,
             "role_member": None,
             "role_events": None,
@@ -268,9 +270,17 @@ class Setup(commands.GroupCog, name="setup"):
         await interaction.guild.me.add_roles(roles["role_bot"])
 
         # Membership Roles
+        roles["role_judge"] = await interaction.guild.create_role(
+            name="Judge",
+            permissions=Permissions(permissions=ROLE_PERMISSIONS["role_judge"]),
+            color=ROLE_COLORS["role_judge"],
+            hoist=False,
+        )
+
         roles["role_citizen"] = await interaction.guild.create_role(
             name="Citizen",
             permissions=Permissions(permissions=ROLE_PERMISSIONS["role_citizen"]),
+            color=ROLE_COLORS["role_citizen"],
             hoist=False,
         )
 
@@ -334,51 +344,6 @@ class Setup(commands.GroupCog, name="setup"):
             ),
         )
 
-    async def check_roles_exist(self, interaction: discord.Interaction) -> bool:
-        guild = self.bot.get_guild(self.bot.config["global"]["guild_id"])
-
-        # Setup Role Cache
-        for role in guild.roles:
-            if not role.managed:
-                self.bot.state["map_roles"][DB_ROLE_NAME_MAP[role.name]] = role
-
-        # Check Roles Exist in Database
-        db_guilds = await self.bot.engine.find(GuildModel)
-        db_roles = db_guilds[0].roles
-
-        for role in guild.roles[1:]:
-            if not role.managed:
-                db_role_id = interaction.guild.get_role(
-                    db_roles[DB_ROLE_NAME_MAP[role.name]]
-                ).id
-                if not db_role_id:
-                    await update(
-                        interaction,
-                        embed=Embed(
-                            title=f"Roles Missing",
-                            description="Please run the setup of roles again. "
-                            "Roles in the database are missing from the server.",
-                            color=0xE74C3C,
-                        ),
-                        ephemeral=True,
-                    )
-                    return False
-                elif role.id == db_role_id:
-                    continue
-                else:
-                    await update(
-                        interaction,
-                        embed=Embed(
-                            title=f"Data Mismatch",
-                            description="Please run the setup of roles again. "
-                            "Roles in the server do not match the database.",
-                            color=0xE74C3C,
-                        ),
-                        ephemeral=True,
-                    )
-                    return False
-        return True
-
     @app_commands.command(
         name="channels",
         description="Setup channels required by the bot. This is a dangerous procedure that alters the database.",
@@ -405,7 +370,7 @@ class Setup(commands.GroupCog, name="setup"):
             )
             return
 
-        roles_exist = await self.check_roles_exist(interaction)
+        roles_exist = await check_roles_exist(self.bot, interaction)
 
         if not roles_exist:
             await update(
@@ -690,6 +655,56 @@ class Setup(commands.GroupCog, name="setup"):
             embed=Embed(
                 title="Channels Updated",
                 description="Channels have been successfully set up.",
+                color=0x2ECC71,
+            ),
+        )
+
+    @app_commands.command(
+        name="icons",
+        description="Setup role icons required by the bot.",
+    )
+    async def channels(self, interaction: discord.Interaction) -> None:
+        await update(
+            interaction,
+            embed=Embed(
+                title="Processing Icons",
+                description="This may take a while.",
+                color=0xF1C40F,
+            ),
+        )
+
+        at_level_2 = check_level_2(self.bot, interaction)
+        if not at_level_2:
+            await update(
+                interaction,
+                embed=Embed(
+                    title="Unsatisfied Requirements",
+                    description="Please ensure the server is boosted to at least tier 2.",
+                    color=0xE74C3C,
+                ),
+                ephemeral=True,
+            )
+
+        roles = self.bot.state["map_roles"]
+
+        # Add Role Icons
+        await roles["role_grandmaster"].edit(unicode_emoji="👑")
+        await roles["role_legend"].edit(unicode_emoji="🏆")
+        await roles["role_master"].edit(unicode_emoji="⚖️")
+        await roles["role_expert"].edit(unicode_emoji="⚔️")
+        await roles["role_distinguished"].edit(unicode_emoji="💥")
+        await roles["role_apprentice"].edit(unicode_emoji="💡")
+        await roles["role_novice"].edit(unicode_emoji="🔥")
+        await roles["role_initiate"].edit(unicode_emoji="🔰")
+        await roles["role_rookie"].edit(unicode_emoji="🧷")
+        await roles["role_incompetent"].edit(unicode_emoji="💯")
+
+        # Send Confirmation Message
+        await update(
+            interaction,
+            embed=Embed(
+                title="Icons Updated",
+                description="Icons have been successfully set up.",
                 color=0x2ECC71,
             ),
         )

@@ -19,6 +19,7 @@ DB_ROLE_NAME_MAP = {
     "Rookie": "role_rookie",
     "Incompetent": "role_incompetent",
     "Bot": "role_bot",
+    "Judge": "role_judge",
     "Citizen": "role_citizen",
     "Member": "role_member",
     "Logs": "role_logs",
@@ -112,6 +113,7 @@ ROLE_PERMISSIONS = {
     "role_rookie": 0,
     "role_incompetent": 0,
     "role_bot": 0,
+    "role_judge": 517580639296,
     "role_citizen": 517580639296,
     "role_member": 517580639296,
     "role_logs": 0,
@@ -142,6 +144,7 @@ ROLE_COLORS = {
     "role_rookie": None,
     "role_incompetent": None,
     "role_bot": None,
+    "role_judge": 0xE67E22,
     "role_citizen": 0x3498DB,
     "role_member": None,
     "role_logs": None,
@@ -155,7 +158,13 @@ ROLE_COLORS = {
 BOT_DESCRIPTION = "Elections and Debates for Discord Servers"
 
 # Bot Plugins Directories
-PLUGINS = ["plugins.global", "plugins.layout", "plugins.meta", "plugins.security"]
+PLUGINS = [
+    "plugins.debate",
+    "plugins.global",
+    "plugins.layout",
+    "plugins.meta",
+    "plugins.security",
+]
 
 
 if __name__ == "__main__":

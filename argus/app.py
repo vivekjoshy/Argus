@@ -1,3 +1,5 @@
+from queue import Queue
+
 import sentry_sdk
 import structlog_sentry_logger
 from odmantic import AIOEngine
@@ -22,3 +24,17 @@ engine = AIOEngine(motor_client=db, database=config["database"]["database"])
 # Initialize Bot
 bot = ArgusClient(config, logger)
 bot.remove_command("help")
+
+bot.state = {
+    "roles_are_setup": False,
+    "channels_are_setup": False,
+    "map_roles": {},
+    "map_channels": {},
+    "debates_enabled": False,
+    "debate_rooms": [],
+    "interface_messages": [],
+    "exiting": False,
+    "debate_feed_fifo": Queue(),
+    "voice_channel_update_task": None,
+    "debate_feed_updater_task": None,
+}
