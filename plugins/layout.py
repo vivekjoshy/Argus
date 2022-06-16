@@ -878,25 +878,26 @@ class Migrate(commands.GroupCog, name="migrate"):
         db_guilds = await self.bot.engine.find(GuildModel)
         guild_instance = db_guilds[0]
         channels = guild_instance.channels
-        for _category, _channels in guild.by_category():
-            if _category:
-                category_id = channels[DB_CHANNEL_NAME_MAP[_category.name]]
-                for _channel in _category.channels:
-                    channel_id = channels[DB_CHANNEL_NAME_MAP[_channel.name]]
-                    if _channel.id != channel_id:
-                        if _channel not in [
-                            guild.rules_channel,
-                            guild.public_updates_channel,
-                        ]:
-                            await _channel.delete()
+        if channels:
+            for _category, _channels in guild.by_category():
+                if _category:
+                    category_id = channels[DB_CHANNEL_NAME_MAP[_category.name]]
+                    for _channel in _category.channels:
+                        channel_id = channels[DB_CHANNEL_NAME_MAP[_channel.name]]
+                        if _channel.id != channel_id:
+                            if _channel not in [
+                                guild.rules_channel,
+                                guild.public_updates_channel,
+                            ]:
+                                await _channel.delete()
 
-                if _category.id != category_id:
-                    await _category.delete()
-            else:
-                for _channel in _channels:
-                    channel_id = channels[DB_CHANNEL_NAME_MAP[_channel.name]]
-                    if _channel.id != channel_id:
-                        await _channel.delete()
+                    if _category.id != category_id:
+                        await _category.delete()
+                else:
+                    for _channel in _channels:
+                        channel_id = channels[DB_CHANNEL_NAME_MAP[_channel.name]]
+                        if _channel.id != channel_id:
+                            await _channel.delete()
 
         for _channel in guild.channels:
             if _channel.name not in DB_CHANNEL_NAME_MAP.keys():

@@ -55,11 +55,11 @@ class Skill(
                     {"$unwind": {"path": "$items", "includeArrayIndex": "items.rank"}},
                     {"$replaceRoot": {"newRoot": "$items"}},
                     {"$addFields": {"newRank": {"$add": ["$rank", 1]}}},
-                    {"$match": {"member_id": int(member.id)}},
+                    {"$match": {"member": int(member.id)}},
                 ]
 
                 member_found = None
-                member_doc = self.bot.db[self.bot.db.database].membermodel.aggregate(
+                member_doc = self.bot.db[self.bot.db.database].member.aggregate(
                     pipeline=pipeline
                 )
                 async for member_found in member_doc:
@@ -112,7 +112,7 @@ class Skill(
                 {"$unwind": {"path": "$items", "includeArrayIndex": "items.rank"}},
                 {"$replaceRoot": {"newRoot": "$items"}},
                 {"$addFields": {"newRank": {"$add": ["$rank", 1]}}},
-                {"$match": {"member_id": int(interaction.user.id)}},
+                {"$match": {"member": int(interaction.user.id)}},
             ]
 
             member_found = None
@@ -209,15 +209,18 @@ class Skill(
                 value=f"{player_a.mention} has a "
                 f"{((player_a_probability - player_b_probability) / player_b_probability) * 100: .2f}% "
                 f"chance of winning against {player_b.mention}.",
+                inline=False,
             )
             embed.add_field(
                 name="Draw Probability",
                 value=f"The debate has a {draw_probability: .2f}% chance of drawing.",
+                inline=False,
             )
             embed.add_field(
                 name="Raw Probabilities",
                 value=f"`{1: 03d}` {player_a.mention} • {player_a_probability * 100: .2f}%\n"
                 f"`{2: 03d}` {player_b.mention} • {player_b_probability * 100: .2f}%",
+                inline=False,
             )
             await update(interaction, embed=embed)
         elif player_a_probability < player_b_probability:
@@ -227,15 +230,18 @@ class Skill(
                 value=f"{player_b.mention} has a "
                 f"{((player_b_probability - player_a_probability) / player_a_probability) * 100: .2f}% "
                 f"chance of winning against {player_a.mention}.",
+                inline=False,
             )
             embed.add_field(
                 name="Draw Probability",
                 value=f"The debate has a {draw_probability: .2f}% chance of drawing.",
+                inline=False,
             )
             embed.add_field(
                 name="Win Probabilities",
                 value=f"`{1: 03d}` {player_a.mention} • {player_a_probability * 100: .2f}%\n"
                 f"`{2: 03d}` {player_b.mention} • {player_b_probability * 100: .2f}%",
+                inline=False,
             )
             await update(interaction, embed=embed)
         else:
@@ -243,16 +249,19 @@ class Skill(
             embed.add_field(
                 name="Win Probability",
                 value=f"There isn't enough data to determine who will win.",
+                inline=False,
             )
             embed.add_field(
                 name="Draw Probability",
                 value=f"The debate has a {draw_probability: .2f}% chance of drawing.",
+                inline=False,
             )
 
             embed.add_field(
                 name="Raw Probabilities",
                 value=f"`{1: 03d}` {player_a.mention} • {player_a_probability * 100: .2f}%\n"
                 f"`{2: 03d}` {player_b.mention} • {player_b_probability * 100: .2f}%",
+                inline=False,
             )
             await update(interaction, embed=embed)
 
@@ -266,7 +275,7 @@ class Skill(
     ) -> None:
         skill_cursor = (
             self.bot.db[self.bot.db.database]
-            .membermodel.find()
+            .member.find()
             .sort("rating", pymongo.DESCENDING)
         )
 
@@ -276,7 +285,7 @@ class Skill(
         async for skill_mapping in skill_cursor:
             if count == 10:
                 break
-            member = guild.get_member(skill_mapping["member_id"])
+            member = guild.get_member(skill_mapping["member"])
             if not member:
                 continue
             count += 1
@@ -351,7 +360,7 @@ class Skill(
         )
         await update(interaction, embed=embed)
 
-        await self.bot.db[self.bot.db.database].membermodel.create_index(
+        await self.bot.db[self.bot.db.database].member.create_index(
             [("rating", pymongo.DESCENDING)]
         )
 

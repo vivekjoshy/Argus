@@ -212,7 +212,6 @@ async def insert_skill(
                 if math.isclose(floored_rating, rating, rel_tol=1e-04):
                     current_rank_role = bot.state["map_roles"][rank]
                     break
-
             return {
                 "mu": mu,
                 "sigma": sigma,
