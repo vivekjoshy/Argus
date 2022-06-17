@@ -1,3 +1,4 @@
+import asyncio
 import datetime
 from typing import List
 
@@ -8,9 +9,12 @@ from discord.ext import commands
 
 from argus.client import ArgusClient
 from argus.common import send_embed_message, check_roles_exist
+from argus.constants import DB_CHANNEL_NAME_MAP
 from argus.db.models.guild import GuildModel
 from argus.models import DebateRoom
+from argus.tasks import debate_feed_updater
 from argus.utils import update
+from argus.voice import voice_channel_update
 
 
 @app_commands.default_permissions(administrator=True)
@@ -88,18 +92,33 @@ class Global(
                     )
                 )
 
+        # Setup Channels Cache
+        for channel in interaction.guild.channels:
+            if channel.name in DB_CHANNEL_NAME_MAP.keys():
+                self.bot.state["map_channels"][
+                    DB_CHANNEL_NAME_MAP[channel.name]
+                ] = channel
+
         for room in debate_rooms:
             now = datetime.datetime.now(tz=pytz.UTC)
             async for message in room.vc.history(
                 limit=100, after=now - datetime.timedelta(days=14)
             ):
                 if message.author == self.bot.user:
-                    if message.embeds[0].title.startswith("Debate Room"):
-                        await message.delete()
+                    if len(message.embeds) > 0:
+                        if message.embeds[0].title.startswith("Debate Room"):
+                            await message.delete()
 
         for room in debate_rooms:
             message = await send_embed_message(self.bot, room.number)
             interface_messages.append(message.id)
+
+        self.bot.state["debate_feed_updater_task"] = asyncio.create_task(
+            debate_feed_updater(self.bot)
+        )
+        self.bot.state["voice_channel_update_task"] = asyncio.create_task(
+            voice_channel_update(self.bot)
+        )
 
         # Send Confirmation Message
         await update(

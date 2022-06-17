@@ -18,7 +18,7 @@ def get_room_number(bot: ArgusClient, channel: VoiceChannel) -> Optional[int]:
     """Get a room number from a TextChannel or VoiceChannel ID."""
     debate_rooms: List[DebateRoom] = bot.state["debate_rooms"]
     for room in debate_rooms:
-        if channel.id == room.vc.id:
+        if channel == room.vc:
             return room.number
     else:
         return None
@@ -384,7 +384,7 @@ async def update_im(bot: ArgusClient, room_num: int):
     topic = room.current_topic
     if topic:
         embed.add_field(
-            name="**Topic**: ",
+            name="**Current Topic**: ",
             value=f"{get_room(bot, room_num).current_topic}",
         )
     try:
@@ -394,9 +394,7 @@ async def update_im(bot: ArgusClient, room_num: int):
         return
 
 
-async def conclude_debate(
-    bot: ArgusClient, interaction: Interaction, room: DebateRoom, debaters
-):
+async def conclude_debate(bot: ArgusClient, room: DebateRoom, debaters):
     channels = bot.state["map_channels"]
 
     embed = Embed(
@@ -416,15 +414,12 @@ async def conclude_debate(
             await member.edit(mute=False)
 
     if debaters:
-        await interaction.channel.send(room.vc, embed=embed)
+        await room.vc.send(embed=embed)
 
         for debater in debaters:
             # Mute
             if debater.member in room.vc.members:
                 await debater.member.edit(mute=True)
-
-        for debater in debaters:
-            await room.vc.set_permissions(debater.member, overwrite=None)
 
     if len(debaters) > 1:
         for debater in debaters:
@@ -482,16 +477,16 @@ async def conclude_debate(
                     rank_role = bot.state["map_roles"][rank]
                     break
 
-            if rank_role.id not in debater.member.role_ids:
-                await debater.member.add_role(
+            if rank_role not in debater.member.roles:
+                await debater.member.add_roles(
                     rank_role, reason="Added at the end of a debate match."
                 )
 
             for rank, rating in RANK_RATING_MAP.items():
                 rank_role_id = bot.state["map_roles"][rank]
-                if int(rank_role_id) in debater.member.role_ids:
-                    if int(rank_role_id) != int(rank_role.id):
-                        await debater.member.remove_role(
+                if rank_role_id in debater.member.roles:
+                    if rank_role_id != rank_role:
+                        await debater.member.remove_roles(
                             rank_role_id, reason="Removed at the end of a debate match."
                         )
 
@@ -545,7 +540,6 @@ async def update_topic(bot: ArgusClient, room: DebateRoom):
             room.start_match(current_topic)
 
             for member in room.vc.members:
-                await room.vc.set_permissions(member, overwrite=None)
                 await member.edit(mute=True)
             await update_im(bot, room.number)
         else:
@@ -558,8 +552,6 @@ async def update_topic(bot: ArgusClient, room: DebateRoom):
 
                 # Mute debaters early
                 for debater in debaters:
-                    # Remove overwrite from VC and mute
-                    await room.vc.set_permissions(debater.member, overwrite=None)
                     if debater.member in room.vc.members:
                         await debater.member.edit(mute=True)
 
@@ -571,8 +563,6 @@ async def update_topic(bot: ArgusClient, room: DebateRoom):
 
                     # Mute debaters early
                     for debater in debaters:
-                        # Remove overwrite from VC and mute
-                        await room.vc.set_permissions(debater.member, overwrite=None)
                         if debater.member in room.vc.members:
                             await debater.member.edit(mute=True)
 
@@ -605,8 +595,6 @@ async def update_topic(bot: ArgusClient, room: DebateRoom):
 
                 # Mute debaters early
                 for debater in debaters:
-                    # Remove overwrite from VC and mute
-                    await room.vc.set_permissions(debater.member, overwrite=None)
                     if debater.member in room.vc.members:
                         await debater.member.edit(mute=True)
 

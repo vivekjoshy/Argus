@@ -16,7 +16,7 @@ from argus.constants import (
     CHANNEL_SORT_ORDER,
 )
 from argus.db.models.guild import GuildModel
-from argus.overwrites import generate_overwrites, NEGATIVE, MODERATION_BOT
+from argus.overwrites import generate_overwrites, NEGATIVE, MODERATION_BOT, BASE
 from argus.utils import update
 
 
@@ -622,8 +622,17 @@ class Setup(commands.GroupCog, name="setup"):
                 await channels[f"vc_debate_{_channel_number}"].edit(
                     overwrites={
                         roles["role_moderation_bot"]: MODERATION_BOT,
+                        roles["role_chancellor"]: NEGATIVE,
+                        roles["role_liege"]: NEGATIVE,
+                        roles["role_prime_minister"]: NEGATIVE,
+                        roles["role_minister"]: NEGATIVE,
+                        roles["role_host"]: NEGATIVE,
+                        roles["role_bot"]: BASE,
+                        roles["role_judge"]: NEGATIVE,
                         roles["role_citizen"]: NEGATIVE,
                         roles["role_member"]: NEGATIVE,
+                        roles["role_logs"]: BASE,
+                        roles["role_detained"]: NEGATIVE,
                         roles["role_everyone"]: NEGATIVE,
                     }
                 )
@@ -664,7 +673,7 @@ class Setup(commands.GroupCog, name="setup"):
         name="icons",
         description="Setup role icons required by the bot.",
     )
-    async def channels(self, interaction: discord.Interaction) -> None:
+    async def icons(self, interaction: discord.Interaction) -> None:
         await update(
             interaction,
             embed=Embed(
@@ -950,9 +959,18 @@ class Migrate(commands.GroupCog, name="migrate"):
                                 name=channel_name,
                                 overwrites={
                                     roles["role_moderation_bot"]: MODERATION_BOT,
+                                    roles["role_chancellor"]: NEGATIVE,
+                                    roles["role_liege"]: NEGATIVE,
+                                    roles["role_prime_minister"]: NEGATIVE,
+                                    roles["role_minister"]: NEGATIVE,
+                                    roles["role_host"]: NEGATIVE,
+                                    roles["role_bot"]: BASE,
+                                    roles["role_judge"]: NEGATIVE,
                                     roles["role_citizen"]: NEGATIVE,
                                     roles["role_member"]: NEGATIVE,
-                                    guild.default_role: NEGATIVE,
+                                    roles["role_logs"]: BASE,
+                                    roles["role_detained"]: NEGATIVE,
+                                    roles["role_everyone"]: NEGATIVE,
                                 },
                             )
                         else:
@@ -986,9 +1004,18 @@ class Migrate(commands.GroupCog, name="migrate"):
                     if not _channel.name.endswith(" 1"):
                         overwrites = {
                             roles["role_moderation_bot"]: MODERATION_BOT,
+                            roles["role_chancellor"]: NEGATIVE,
+                            roles["role_liege"]: NEGATIVE,
+                            roles["role_prime_minister"]: NEGATIVE,
+                            roles["role_minister"]: NEGATIVE,
+                            roles["role_host"]: NEGATIVE,
+                            roles["role_bot"]: BASE,
+                            roles["role_judge"]: NEGATIVE,
                             roles["role_citizen"]: NEGATIVE,
                             roles["role_member"]: NEGATIVE,
-                            guild.default_role: NEGATIVE,
+                            roles["role_logs"]: BASE,
+                            roles["role_detained"]: NEGATIVE,
+                            roles["role_everyone"]: NEGATIVE,
                         }
                         if _channel.overwrites != overwrites:
                             await _channel.edit(overwrites=overwrites)

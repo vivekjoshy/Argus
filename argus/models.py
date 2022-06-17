@@ -7,9 +7,7 @@ from discord import VoiceChannel, Member
 
 
 class DebateTopic:
-    def __init__(
-        self, member: discord.Member, message: str = "", text_based: bool = False
-    ):
+    def __init__(self, member: discord.Member, message: str = ""):
         self.author = member
         self.message = message
         self.voters = [self.author]
@@ -59,7 +57,6 @@ class DebateParticipant:
         self, member: discord.Member, mu, sigma, session_start: datetime.datetime
     ):
         self.member = member
-        self.id = member
         self.debater = False
         self.votes: List[DebateParticipant] = []
         self.place = None
@@ -135,7 +132,7 @@ class DebateMatch:
     def add_for(self, participant: DebateParticipant):
         p = participant
         for _ in self.participants:
-            if _.id == p.id:
+            if _.member == p.member:
                 p.against = False
                 return
         p.against = False
@@ -152,7 +149,7 @@ class DebateMatch:
     def add_against(self, participant: DebateParticipant):
         p = participant
         for _ in self.participants:
-            if _.id == p.id:
+            if _.member == p.member:
                 p.against = True
                 return
         p.against = True
@@ -169,14 +166,14 @@ class DebateMatch:
     def remove_participant(self, member: discord.Member):
         """Remove a participant by passing a discord.Member object"""
         for m in self.participants:
-            if m.id == member:
+            if m.member == member:
                 if not m.debater:
                     self.participants.remove(m)
 
     def check_participant(self, member: discord.Member):
         """Check if a member is an active participant."""
         for m in self.participants:
-            if m.id == member:
+            if m.member == member:
                 return True
         return False
 
@@ -184,7 +181,7 @@ class DebateMatch:
         """Check is a voter switched their position."""
         checked_member = self.get_participant(member)
         for debater in self.get_debaters():
-            if checked_member in [v.id for v in debater.votes]:
+            if checked_member in [v.member for v in debater.votes]:
                 if checked_member.against == debater.against:
                     return False
                 else:
@@ -196,7 +193,7 @@ class DebateMatch:
             self.session_start = datetime.datetime.utcnow()
 
         for m in self.participants:
-            if m.id == member:
+            if m.member == member:
                 m.debater = True
                 m.session_start = datetime.datetime.utcnow()
                 break
@@ -215,7 +212,7 @@ class DebateMatch:
 
     def vote(self, voter: discord.Member, candidate: discord.Member):
         for d in self.get_debaters():
-            if d.id == candidate.id:
+            if d.member == candidate:
                 voter_participant = self.get_participant(voter)
                 if not voter_participant:
                     return None
@@ -236,12 +233,12 @@ class DebateMatch:
     def get_debater(self, member: discord.Member):
         debaters = self.get_debaters()
         for d in debaters:
-            if d.id == member:
+            if d.member == member:
                 return d
 
     def get_participant(self, member: discord.Member):
         for p in self.participants:
-            if p.id == member:
+            if p.member == member:
                 return p
 
     def calculate_places(self):
@@ -466,7 +463,7 @@ class DebateRoom:
     def vote_topic(self, voter: discord.Member, candidate: discord.Member):
         """Increment a vote on a topic."""
         members = self.get_topic_members()
-        if candidate.id in members:
+        if candidate in members:
             self.remove_voter_from_topics(voter)
 
             topic = self.topic_from_member(candidate)

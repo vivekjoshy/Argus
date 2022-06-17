@@ -410,9 +410,9 @@ class Topic(
             return
 
         # These checks handle error messages automatically.
-        if not in_debate_room(self.bot, interaction):
+        if not await in_debate_room(self.bot, interaction):
             return
-        if not unlocked_in_private_room(self.bot, interaction):
+        if not await unlocked_in_private_room(self.bot, interaction):
             return
 
         channel = interaction.channel
@@ -459,7 +459,7 @@ class Topic(
         await update_im(self.bot, room_num=room.number)
 
         room.updating_topic = True
-        await update_im(self.bot, room.number)
+        await update_topic(self.bot, room)
         room.updating_topic = False
 
     @app_commands.command(
@@ -477,9 +477,9 @@ class Topic(
             return
 
         # These checks handle error messages automatically.
-        if not in_debate_room(self.bot, interaction):
+        if not await in_debate_room(self.bot, interaction):
             return
-        if not unlocked_in_private_room(self.bot, interaction):
+        if not await unlocked_in_private_room(self.bot, interaction):
             return
 
         channel = interaction.channel
@@ -509,6 +509,8 @@ class Topic(
                 ephemeral=True,
             )
 
+        await interaction.response.defer()
+
         result = room.vote_topic(voter=interaction.user, candidate=candidate)
 
         if not result:
@@ -521,7 +523,7 @@ class Topic(
             return
 
         room.updating_topic = True
-        await update_im(self.bot, room.number)
+        await update_topic(self.bot, room)
         room.updating_topic = False
 
         embed = Embed(
@@ -540,7 +542,7 @@ class Topic(
     ) -> None:
 
         # These checks handle error messages automatically.
-        if not in_debate_room(self.bot, interaction):
+        if not await in_debate_room(self.bot, interaction):
             return
 
         channel = interaction.channel
@@ -564,7 +566,7 @@ class Topic(
             member = interaction.user
 
         for topic in room.topics:
-            if member.id == topic.author.id:
+            if member == topic.author:
                 embed = Embed(
                     title="Member Topic",
                     color=0xEC6A5C,
@@ -599,7 +601,7 @@ class Topic(
     ) -> None:
 
         # These checks handle error messages automatically.
-        if not in_debate_room(self.bot, interaction):
+        if not await in_debate_room(self.bot, interaction):
             return
 
         channel = interaction.channel
@@ -669,7 +671,7 @@ class Topic(
 
         room.match = None  # Clear match
         room.updating_topic = True
-        await update_im(self.bot, room.number)
+        await update_topic(self.bot, room)
 
         if room.private:
             if room.current_topic:
@@ -700,7 +702,7 @@ class Debate(commands.Cog):
     )
     async def stance_for(self, interaction: discord.Interaction) -> None:
         # These checks handle error messages automatically.
-        if not in_debate_room(self.bot, interaction):
+        if not await in_debate_room(self.bot, interaction):
             return
 
         channel = interaction.channel
@@ -716,7 +718,6 @@ class Debate(commands.Cog):
                     description="This command only works once the topic has finished updating.",
                     color=0xE74C3C,
                 ),
-                errored=True,
                 ephemeral=True,
             )
             return
@@ -783,7 +784,7 @@ class Debate(commands.Cog):
     )
     async def stance_against(self, interaction: discord.Interaction) -> None:
         # These checks handle error messages automatically.
-        if not in_debate_room(self.bot, interaction):
+        if not await in_debate_room(self.bot, interaction):
             return
 
         channel = interaction.channel
@@ -855,7 +856,7 @@ class Debate(commands.Cog):
 
         embed = Embed(
             title="Stance Successfully Set",
-            description="You are __for__ the topic.",
+            description="You are __against__ the topic.",
             color=0x2ECC71,
         )
         await update(interaction, embed=embed)
@@ -865,11 +866,11 @@ class Debate(commands.Cog):
     )
     async def add_debater(self, interaction: discord.Interaction) -> None:
         # These checks handle error messages automatically.
-        if not in_debate_room(self.bot, interaction):
+        if not await in_debate_room(self.bot, interaction):
             return
-        if not unlocked_in_private_room(self.bot, interaction):
+        if not await unlocked_in_private_room(self.bot, interaction):
             return
-        if not consented(self.bot, interaction):
+        if not await consented(self.bot, interaction):
             return
 
         channel = interaction.channel
@@ -966,7 +967,7 @@ class Debate(commands.Cog):
         self, interaction: discord.Interaction, debater: Member
     ) -> None:
         # These checks handle error messages automatically.
-        if not in_debate_room(self.bot, interaction):
+        if not await in_debate_room(self.bot, interaction):
             return
 
         channel = interaction.channel
@@ -1010,7 +1011,7 @@ class Debate(commands.Cog):
                 ephemeral=True,
             )
 
-        if candidate.id == author.id:
+        if candidate == author:
             embed = Embed(
                 title="Invalid Candidate",
                 description="You cannot vote for yourself.",
@@ -1022,7 +1023,7 @@ class Debate(commands.Cog):
         candidate_debater = room.match.get_debater(candidate)
 
         if candidate_debater:
-            if author.id in [_.id for _ in candidate_debater.votes]:
+            if author in [candidate_debater.votes]:
                 embed = Embed(
                     title="Vote Already Cast",
                     description="Your vote has been cast already.",
@@ -1070,7 +1071,7 @@ class Debate(commands.Cog):
     )
     async def private(self, interaction: discord.Interaction) -> None:
         # These checks handle error messages automatically.
-        if not in_debate_room(self.bot, interaction):
+        if not await in_debate_room(self.bot, interaction):
             return
 
         channel = interaction.channel
@@ -1090,27 +1091,17 @@ class Debate(commands.Cog):
             )
             return
 
-        if not room.check_match():
-            await update(
-                interaction,
-                embed=Embed(
-                    title="Command Disabled",
-                    description="This command only works if a debate match is ongoing.",
-                    color=0xE74C3C,
-                ),
-            )
-            return
-
-        if room.match.concluding:
-            await update(
-                interaction,
-                embed=Embed(
-                    title="Command Temporarily Disabled",
-                    description="This command only works once the debate match has finished concluding.",
-                    color=0xE74C3C,
-                ),
-                ephemeral=True,
-            )
+        if room.match:
+            if room.match.concluding:
+                await update(
+                    interaction,
+                    embed=Embed(
+                        title="Command Temporarily Disabled",
+                        description="This command only works once the debate match has finished concluding.",
+                        color=0xE74C3C,
+                    ),
+                    ephemeral=True,
+                )
 
         if room.private:
             embed = Embed(
@@ -1147,7 +1138,7 @@ class Debate(commands.Cog):
     )
     async def public(self, interaction: discord.Interaction) -> None:
         # These checks handle error messages automatically.
-        if not in_debate_room(self.bot, interaction):
+        if not await in_debate_room(self.bot, interaction):
             return
 
         channel = interaction.channel
@@ -1167,27 +1158,17 @@ class Debate(commands.Cog):
             )
             return
 
-        if not room.check_match():
-            await update(
-                interaction,
-                embed=Embed(
-                    title="Command Disabled",
-                    description="This command only works if a debate match is ongoing.",
-                    color=0xE74C3C,
-                ),
-            )
-            return
-
-        if room.match.concluding:
-            await update(
-                interaction,
-                embed=Embed(
-                    title="Command Temporarily Disabled",
-                    description="This command only works once the debate match has finished concluding.",
-                    color=0xE74C3C,
-                ),
-                ephemeral=True,
-            )
+        if room.match:
+            if room.match.concluding:
+                await update(
+                    interaction,
+                    embed=Embed(
+                        title="Command Temporarily Disabled",
+                        description="This command only works once the debate match has finished concluding.",
+                        color=0xE74C3C,
+                    ),
+                    ephemeral=True,
+                )
 
         if room.private:
             room.private = False
@@ -1227,7 +1208,7 @@ class Debate(commands.Cog):
         self, interaction: discord.Interaction, participant: Member
     ) -> None:
         # These checks handle error messages automatically.
-        if not in_debate_room(self.bot, interaction):
+        if not await in_debate_room(self.bot, interaction):
             return
 
         channel = interaction.channel
@@ -1311,7 +1292,7 @@ class Debate(commands.Cog):
     )
     async def conclude(self, interaction: discord.Interaction) -> None:
         # These checks handle error messages automatically.
-        if not in_debate_room(self.bot, interaction):
+        if not await in_debate_room(self.bot, interaction):
             return
 
         channel = interaction.channel
@@ -1326,7 +1307,6 @@ class Debate(commands.Cog):
                     description="This command only works once the topic has finished updating.",
                     color=0xE74C3C,
                 ),
-                errored=True,
                 ephemeral=True,
             )
             return
@@ -1368,7 +1348,7 @@ class Debate(commands.Cog):
                 description="You have voted to conclude the debate.",
                 color=0xEC6A5C,
             )
-            await update(interaction, embed)
+            await update(interaction, embed=embed)
 
         if concluded:
             room.match.concluding = True
@@ -1377,7 +1357,7 @@ class Debate(commands.Cog):
                 description="Ratings are being updated. Debate specific commands will not run.",
                 color=0xE67E22,
             )
-            await interaction.channel.send(embed=embed)
+            await room.vc.send(embed=embed)
 
             if room.match:
                 for debater in debaters:
@@ -1391,9 +1371,6 @@ class Debate(commands.Cog):
                 else:
                     for member in room.vc.members:
                         await member.edit(mute=False)
-
-            for debater in debaters:
-                await room.vc.set_permissions(debater.member, overwrite=None)
 
             if room.match:
                 if room.match.check_voters():
@@ -1455,16 +1432,16 @@ class Debate(commands.Cog):
                                 rank_role = self.bot.state["map_roles"][rank]
                                 break
 
-                        if rank_role.id not in debater.member.role_ids:
-                            await debater.member.add_role(
+                        if rank_role not in debater.member.roles:
+                            await debater.member.add_roles(
                                 rank_role, reason="Added at the end of a debate match."
                             )
 
                         for rank, rating in RANK_RATING_MAP.items():
                             rank_role_id = self.bot.state["map_roles"][rank]
-                            if int(rank_role_id) in debater.member.role_ids:
-                                if int(rank_role_id) != int(rank_role.id):
-                                    await debater.member.remove_role(
+                            if rank_role_id in debater.member.roles:
+                                if rank_role_id != rank_role:
+                                    await debater.member.remove_roles(
                                         rank_role_id,
                                         reason="Removed at the end of a debate match.",
                                     )
@@ -1542,7 +1519,7 @@ class Debate(commands.Cog):
     )
     async def consent(self, interaction: discord.Interaction) -> None:
         # These checks handle error messages automatically.
-        if not in_debate_room(self.bot, interaction):
+        if not await in_debate_room(self.bot, interaction):
             return
 
         channel = interaction.channel
@@ -1810,7 +1787,7 @@ class Debate(commands.Cog):
                         else:
                             if room_after.studio:
                                 if (
-                                    self.bot.state["map_roles"]["role_detained"].id
+                                    self.bot.state["map_roles"]["role_detained"]
                                     in member.roles
                                 ):
                                     await member.edit(mute=True)
@@ -1909,7 +1886,7 @@ class Debate(commands.Cog):
 
                     # Remove Recording Session
                     try:
-                        if member.id == room_before.studio_engineer:
+                        if member == room_before.studio_engineer:
                             await asyncio.wait_for(asyncio.sleep(180), timeout=120)
                     except asyncio.TimeoutError:
                         room_before.studio = False
@@ -1952,7 +1929,7 @@ class Debate(commands.Cog):
         else:
             return
 
-        if after_list and before_list:
+        if before.channel and after.channel and after_list and before_list:
             if before.channel not in after_list and after.channel in before_list:
                 await join_room()
                 await leave_room()
@@ -1964,15 +1941,6 @@ class Debate(commands.Cog):
             elif before.channel in after_list and after.channel in before_list:
                 await join_room()
                 await leave_room()
-
-    async def debate_feed_updater(self):
-        while self.bot.state["debates_enabled"]:
-            fifo: Queue = self.bot.state["debate_feed_fifo"]
-            while fifo.qsize() > 0:
-                embed = fifo.get()
-                debate_feed = self.bot.state["map_channels"]["tc_debate_feed"]
-                await debate_feed.send(embed=embed)
-            await asyncio.sleep(0.5)
 
 
 @app_commands.default_permissions(send_messages=True)
@@ -1991,7 +1959,7 @@ class Studio(
     )
     async def start(self, interaction: discord.Interaction) -> None:
         # These checks handle error messages automatically.
-        if not in_debate_room(self.bot, interaction):
+        if not await in_debate_room(self.bot, interaction):
             return
 
         channel = interaction.channel
@@ -2033,7 +2001,7 @@ class Studio(
             return
         else:
             room.studio = True
-            room.studio_engineer = author.id
+            room.studio_engineer = author
 
             await interaction.response.defer()
 
@@ -2056,7 +2024,7 @@ class Studio(
     )
     async def stop(self, interaction: discord.Interaction) -> None:
         # These checks handle error messages automatically.
-        if not in_debate_room(self.bot, interaction):
+        if not await in_debate_room(self.bot, interaction):
             return
 
         channel = interaction.channel
@@ -2086,7 +2054,7 @@ class Studio(
             await update(interaction, embed=embed, ephemeral=True)
             return
         else:
-            if author.id != room.studio_engineer:
+            if author != room.studio_engineer:
                 embed = Embed(
                     title="Command Unauthorized",
                     description=f"Only the studio engineer can run this command.",
