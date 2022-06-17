@@ -63,10 +63,7 @@ async def send_embed_message(
     topic_updated = get_room(bot, room_num).set_current_topic()
     current_topic = get_room(bot, room_num).current_topic
     if current_topic:
-        if current_topic.text_based:
-            embed.add_field(name="Text Based Topic: ", value=f"{current_topic}")
-        elif not current_topic.text_based:
-            embed.add_field(name="Voice Based Topic: ", value=f"{current_topic}")
+        embed.add_field(name="Current Topic: ", value=f"{current_topic}")
 
     debate_rooms = bot.state["debate_rooms"]
     voice_channel: VoiceChannel = debate_rooms[room_num - 1].vc
@@ -212,6 +209,20 @@ async def insert_skill(
                 if math.isclose(floored_rating, rating, rel_tol=1e-04):
                     current_rank_role = bot.state["map_roles"][rank]
                     break
+
+            if current_rank_role not in member.roles:
+                await member.add_roles(
+                    current_rank_role, reason="Added during skill view."
+                )
+
+            for rank, rating in RANK_RATING_MAP.items():
+                rank_role = bot.state["map_roles"][rank]
+                if rank_role in member.roles:
+                    if rank_role != current_rank_role:
+                        await member.remove_roles(
+                            rank_role, reason="Removed during skill view."
+                        )
+
             return {
                 "mu": mu,
                 "sigma": sigma,
@@ -353,7 +364,7 @@ async def unlocked_in_private_room(bot: ArgusClient, interaction: Interaction) -
     return True
 
 
-async def update_im(bot: ArgusClient, interaction: Interaction, room_num: int):
+async def update_im(bot: ArgusClient, room_num: int):
     index = room_num - 1
     interface_messages = bot.state["interface_messages"]
     im_id = interface_messages[index]
@@ -514,7 +525,7 @@ async def conclude_debate(
         await room.vc.send(embed=embed)
 
 
-async def update_topic(bot: ArgusClient, interaction: Interaction, room: DebateRoom):
+async def update_topic(bot: ArgusClient, room: DebateRoom):
     """Update topic of room from current topic."""
     room.remove_obsolete_topics()
 
@@ -536,7 +547,7 @@ async def update_topic(bot: ArgusClient, interaction: Interaction, room: DebateR
             for member in room.vc.members:
                 await room.vc.set_permissions(member, overwrite=None)
                 await member.edit(mute=True)
-            await update_im(bot, interaction, room.number)
+            await update_im(bot, room.number)
         else:
             # Do nothing if there are no voters
             if not room.match.check_voters():
@@ -574,18 +585,18 @@ async def update_topic(bot: ArgusClient, interaction: Interaction, room: DebateR
                     current_topic = room.current_topic
                     room.start_match(current_topic)
 
-                    await update_im(bot, interaction, room.number)
+                    await update_im(bot, room.number)
                     for member in room.vc.members:
                         await member.edit(mute=True)
             elif match.concluding is False and match.concluded is True:
                 topic_updated = room.set_current_topic()
                 current_topic = room.current_topic
-                await update_im(bot, interaction, room.number)
+                await update_im(bot, room.number)
                 return
             elif match.concluding is True and match.concluded is False:
                 topic_updated = room.set_current_topic()
                 current_topic = room.current_topic
-                await update_im(bot, interaction, room.number)
+                await update_im(bot, room.number)
                 return
     else:
         if match:
@@ -615,4 +626,71 @@ async def update_topic(bot: ArgusClient, interaction: Interaction, room: DebateR
 
     topic_updated = room.set_current_topic()
     current_topic = room.current_topic
-    await update_im(bot, interaction, room.number)
+    await update_im(bot, room.number)
+
+
+def check_debater_in_any_room(
+    bot: ArgusClient, interaction: Interaction, room, member: Member
+) -> bool:
+    """Ensure member is a debater in only one room."""
+    rooms = list(bot.state["debate_rooms"])
+    rooms.remove(room)
+    for room in rooms:
+        if room.match:
+            if room.match.check_debater(member):
+                return True
+    return False
+
+
+def get_debater_room(
+    bot: ArgusClient, interaction: Interaction, member: Member
+) -> Optional[DebateRoom]:
+    """Get a room from a debater."""
+    for room in bot.state["debate_rooms"]:
+        if room.match:
+            if room.match.check_debater(member):
+                return room
+    return None
+
+
+async def consented(bot: ArgusClient, interaction: Interaction) -> bool:
+    """
+    Checks if the command is run by a member who consented in a studio
+    room.
+    """
+    channel = interaction.channel
+    room_number = get_room_number(bot, channel)
+    room: Optional[DebateRoom] = get_room(bot, room_number)
+
+    if not room:
+        await update(
+            interaction,
+            embed=Embed(
+                title="Incorrect Channel",
+                description="This command cannot be run in this channel.",
+                color=0xE74C3C,
+            ),
+            ephemeral=True,
+        )
+        return False
+
+    if room.studio:
+        if interaction.user not in room.studio_participants:
+            await update(
+                interaction,
+                embed=Embed(
+                    title="Unauthorized",
+                    description="You need to consent to being recorded to use this command.",
+                    color=0xE74C3C,
+                ),
+                ephemeral=True,
+            )
+            return False
+    return True
+
+
+async def add_interface_message(bot: ArgusClient, index, embed: Optional[Embed] = None):
+    room_num = index + 1
+    im_add = await send_embed_message(bot, room_num, embed)
+    bot.state["interface_messages"][index] = im_add.id
+    return bot.state["interface_messages"][index]

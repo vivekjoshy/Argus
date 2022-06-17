@@ -307,6 +307,7 @@ class Setup(commands.GroupCog, name="setup"):
             name="Debate Ping",
             permissions=Permissions(permissions=ROLE_PERMISSIONS["role_debate_ping"]),
             hoist=False,
+            mentionable=True,
         )
 
         # Punishment Roles

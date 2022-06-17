@@ -99,7 +99,7 @@ ROLE_PERMISSIONS = {
     "role_chancellor": 1643025792448,
     "role_liege": 1643025792320,
     "role_prime_minister": 1634435857728,
-    "role_minister": 1617255988544,
+    "role_minister": 517715000640,
     "role_host": 0,
     "role_champion": 0,
     "role_grandmaster": 0,

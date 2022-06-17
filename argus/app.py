@@ -25,6 +25,9 @@ engine = AIOEngine(motor_client=db, database=config["database"]["database"])
 bot = ArgusClient(config, logger)
 bot.remove_command("help")
 
+with open("resources/propositions.txt") as p:
+    propositions = p.readlines()
+
 bot.state = {
     "roles_are_setup": False,
     "channels_are_setup": False,
@@ -37,4 +40,5 @@ bot.state = {
     "debate_feed_fifo": Queue(),
     "voice_channel_update_task": None,
     "debate_feed_updater_task": None,
+    "propositions": propositions,
 }

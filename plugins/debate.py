@@ -1,11 +1,15 @@
+import asyncio
+import math
+import random
 import typing
 from datetime import datetime
+from queue import Queue
 from typing import Optional
 
 import discord
 import openskill
 import pymongo
-from discord import app_commands, Member, Interaction, Embed
+from discord import app_commands, Member, Interaction, Embed, Role
 from discord.ext import commands
 
 from argus.client import ArgusClient
@@ -17,9 +21,15 @@ from argus.common import (
     get_room,
     update_im,
     update_topic,
+    check_debater_in_any_room,
+    get_debater_room,
+    consented,
+    add_interface_message,
 )
+from argus.constants import RANK_RATING_MAP
+from argus.db.models.user import MemberModel
 from argus.models import DebateRoom, DebateTopic, DebateParticipant
-from argus.utils import update
+from argus.utils import update, floor_rating
 
 
 @app_commands.default_permissions(send_messages=True)
@@ -446,10 +456,10 @@ class Topic(
                 embed=embed,
             )
 
-        await update_im(self.bot, interaction, room_num=room.number)
+        await update_im(self.bot, room_num=room.number)
 
         room.updating_topic = True
-        await update_topic(self.bot, interaction, room)
+        await update_im(self.bot, room.number)
         room.updating_topic = False
 
     @app_commands.command(
@@ -488,6 +498,17 @@ class Topic(
             )
             return
 
+        if room.match.concluding:
+            await update(
+                interaction,
+                embed=Embed(
+                    title="Command Temporarily Disabled",
+                    description="This command only works once the debate match has finished concluding.",
+                    color=0xE74C3C,
+                ),
+                ephemeral=True,
+            )
+
         result = room.vote_topic(voter=interaction.user, candidate=candidate)
 
         if not result:
@@ -500,7 +521,7 @@ class Topic(
             return
 
         room.updating_topic = True
-        await update_topic(self.bot, interaction, room)
+        await update_im(self.bot, room.number)
         room.updating_topic = False
 
         embed = Embed(
@@ -567,7 +588,7 @@ class Topic(
         await update(interaction, embed=embed, ephemeral=True)
 
     @app_commands.command(
-        name="view",
+        name="remove",
         description="View user's topic and it's details.",
     )
     @app_commands.checks.has_any_role(
@@ -579,8 +600,6 @@ class Topic(
 
         # These checks handle error messages automatically.
         if not in_debate_room(self.bot, interaction):
-            return
-        if not unlocked_in_private_room(self.bot, interaction):
             return
 
         channel = interaction.channel
@@ -597,6 +616,17 @@ class Topic(
                 ),
             )
             return
+
+        if room.match.concluding:
+            await update(
+                interaction,
+                embed=Embed(
+                    title="Command Temporarily Disabled",
+                    description="This command only works once the debate match has finished concluding.",
+                    color=0xE74C3C,
+                ),
+                ephemeral=True,
+            )
 
         await interaction.response.defer()
 
@@ -639,7 +669,7 @@ class Topic(
 
         room.match = None  # Clear match
         room.updating_topic = True
-        await update_topic(self.bot, interaction, room)
+        await update_im(self.bot, room.number)
 
         if room.private:
             if room.current_topic:
@@ -665,12 +695,53 @@ class Debate(commands.Cog):
         self.bot = bot
         super().__init__()
 
-    @app_commands.command(name="for")
+    @app_commands.command(
+        name="for", description="Set you stance as for the topic in a debate room."
+    )
     async def stance_for(self, interaction: discord.Interaction) -> None:
+        # These checks handle error messages automatically.
+        if not in_debate_room(self.bot, interaction):
+            return
+
         channel = interaction.channel
         room_number = get_room_number(self.bot, channel)
         room: typing.Optional[DebateRoom] = get_room(self.bot, room_number)
         author = interaction.user
+
+        if room.updating_topic:
+            await update(
+                interaction,
+                embed=Embed(
+                    title="Command Temporarily Disabled",
+                    description="This command only works once the topic has finished updating.",
+                    color=0xE74C3C,
+                ),
+                errored=True,
+                ephemeral=True,
+            )
+            return
+
+        if not room.check_match():
+            await update(
+                interaction,
+                embed=Embed(
+                    title="Command Disabled",
+                    description="This command only works if a debate match is ongoing.",
+                    color=0xE74C3C,
+                ),
+            )
+            return
+
+        if room.match.concluding:
+            await update(
+                interaction,
+                embed=Embed(
+                    title="Command Temporarily Disabled",
+                    description="This command only works once the debate match has finished concluding.",
+                    color=0xE74C3C,
+                ),
+                ephemeral=True,
+            )
 
         if room.match.check_participant(author):
             participant = room.match.get_participant(author)
@@ -706,6 +777,1343 @@ class Debate(commands.Cog):
         )
         await update(interaction, embed=embed)
 
+    @app_commands.command(
+        name="against",
+        description="Set you stance as against the topic in a debate room.",
+    )
+    async def stance_against(self, interaction: discord.Interaction) -> None:
+        # These checks handle error messages automatically.
+        if not in_debate_room(self.bot, interaction):
+            return
+
+        channel = interaction.channel
+        room_number = get_room_number(self.bot, channel)
+        room: typing.Optional[DebateRoom] = get_room(self.bot, room_number)
+        author = interaction.user
+
+        if room.updating_topic:
+            await update(
+                interaction,
+                embed=Embed(
+                    title="Command Temporarily Disabled",
+                    description="This command only works once the topic has finished updating.",
+                    color=0xE74C3C,
+                ),
+                errored=True,
+                ephemeral=True,
+            )
+            return
+
+        if not room.check_match():
+            await update(
+                interaction,
+                embed=Embed(
+                    title="Command Disabled",
+                    description="This command only works if a debate match is ongoing.",
+                    color=0xE74C3C,
+                ),
+            )
+            return
+
+        if room.match.concluding:
+            await update(
+                interaction,
+                embed=Embed(
+                    title="Command Temporarily Disabled",
+                    description="This command only works once the debate match has finished concluding.",
+                    color=0xE74C3C,
+                ),
+                ephemeral=True,
+            )
+
+        if room.match.check_participant(author):
+            participant = room.match.get_participant(author)
+            if participant.against:
+                embed = Embed(
+                    title="Stance Already Set",
+                    description="You are already against the topic.",
+                    color=0xF1C40F,
+                )
+            else:
+                embed = Embed(
+                    title="Stance Already Set",
+                    description="You are already for the topic.",
+                    color=0xF1C40F,
+                )
+            await update(interaction, embed=embed, ephemeral=True)
+            return
+
+        packed_data = await insert_skill(self.bot, interaction, author)
+        mu = packed_data["mu"]
+        sigma = packed_data["sigma"]
+
+        room.match.add_against(
+            DebateParticipant(
+                member=author, mu=mu, sigma=sigma, session_start=datetime.utcnow()
+            )
+        )
+
+        embed = Embed(
+            title="Stance Successfully Set",
+            description="You are __for__ the topic.",
+            color=0x2ECC71,
+        )
+        await update(interaction, embed=embed)
+
+    @app_commands.command(
+        name="debate", description="Start or join a debate after you've set a stance."
+    )
+    async def add_debater(self, interaction: discord.Interaction) -> None:
+        # These checks handle error messages automatically.
+        if not in_debate_room(self.bot, interaction):
+            return
+        if not unlocked_in_private_room(self.bot, interaction):
+            return
+        if not consented(self.bot, interaction):
+            return
+
+        channel = interaction.channel
+        room_number = get_room_number(self.bot, channel)
+        room: typing.Optional[DebateRoom] = get_room(self.bot, room_number)
+        author = interaction.user
+
+        if room.updating_topic:
+            await update(
+                interaction,
+                embed=Embed(
+                    title="Command Temporarily Disabled",
+                    description="This command only works once the topic has finished updating.",
+                    color=0xE74C3C,
+                ),
+                errored=True,
+                ephemeral=True,
+            )
+            return
+
+        if not room.check_match():
+            await update(
+                interaction,
+                embed=Embed(
+                    title="Command Disabled",
+                    description="This command only works if a debate match is ongoing.",
+                    color=0xE74C3C,
+                ),
+            )
+            return
+
+        if room.match.concluding:
+            await update(
+                interaction,
+                embed=Embed(
+                    title="Command Temporarily Disabled",
+                    description="This command only works once the debate match has finished concluding.",
+                    color=0xE74C3C,
+                ),
+                ephemeral=True,
+            )
+
+        if check_debater_in_any_room(
+            bot=self.bot, interaction=interaction, room=room, member=author
+        ):
+            debater_room = get_debater_room(
+                bot=self.bot, interaction=interaction, member=author
+            )
+            embed = Embed(
+                title="You are not allowed to start multiple debates simultaneously.",
+                description=f"Please wait till your existing debate in __Debate {debater_room.number}__ is finished.",
+                color=0xF1C40F,
+            )
+            await update(interaction, embed=embed, ephemeral=True)
+            return
+
+        if room.match.check_debater(author):
+            embed = Embed(
+                title="Command Disabled",
+                description="You are already a debater.",
+                color=0xE74C3C,
+            )
+            await update(interaction, embed=embed, ephemeral=True)
+            return
+
+        if not room.match.check_participant(author):
+            embed = Embed(
+                title="You must choose a position on the topic before "
+                "you can debate.",
+                description="`/for` - For the topic.\n\n"
+                "`/against` - Against the topic.",
+                color=0xF1C40F,
+            )
+            await update(interaction, embed=embed, ephemeral=True)
+            return
+
+        current_session_start = datetime.utcnow()
+        for participant in room.match.participants:
+            participant.session_start = current_session_start
+
+        room.match.add_debater(author)
+
+        await author.edit(mute=False)
+
+        embed = Embed(
+            title="You are now a debater on the topic.",
+            description="Your skill rating is at risk. Be mindful of what you say.",
+            color=0x2ECC71,
+        )
+        await update(interaction, embed=embed)
+
+    @app_commands.command(name="vote", description="Vote for you think won the debate")
+    async def debate_vote(
+        self, interaction: discord.Interaction, debater: Member
+    ) -> None:
+        # These checks handle error messages automatically.
+        if not in_debate_room(self.bot, interaction):
+            return
+
+        channel = interaction.channel
+        room_number = get_room_number(self.bot, channel)
+        room: typing.Optional[DebateRoom] = get_room(self.bot, room_number)
+        author = interaction.user
+        candidate = debater
+
+        if room.updating_topic:
+            await update(
+                interaction,
+                embed=Embed(
+                    title="Command Temporarily Disabled",
+                    description="This command only works once the topic has finished updating.",
+                    color=0xE74C3C,
+                ),
+                errored=True,
+                ephemeral=True,
+            )
+            return
+
+        if not room.check_match():
+            await update(
+                interaction,
+                embed=Embed(
+                    title="Command Disabled",
+                    description="This command only works if a debate match is ongoing.",
+                    color=0xE74C3C,
+                ),
+            )
+            return
+
+        if room.match.concluding:
+            await update(
+                interaction,
+                embed=Embed(
+                    title="Command Temporarily Disabled",
+                    description="This command only works once the debate match has finished concluding.",
+                    color=0xE74C3C,
+                ),
+                ephemeral=True,
+            )
+
+        if candidate.id == author.id:
+            embed = Embed(
+                title="Invalid Candidate",
+                description="You cannot vote for yourself.",
+                color=0xE74C3C,
+            )
+            await update(interaction, embed=embed, ephemeral=True)
+            return
+
+        candidate_debater = room.match.get_debater(candidate)
+
+        if candidate_debater:
+            if author.id in [_.id for _ in candidate_debater.votes]:
+                embed = Embed(
+                    title="Vote Already Cast",
+                    description="Your vote has been cast already.",
+                    color=0xF1C40F,
+                )
+                await update(interaction, embed=embed, ephemeral=True)
+                return
+        else:
+            embed = Embed(
+                title="Invalid Candidate",
+                description="You can only vote for debaters.",
+                color=0xE74C3C,
+            )
+            await update(interaction, embed=embed, ephemeral=True)
+            return
+
+        result = room.match.vote(voter=author, candidate=candidate)
+        if result is None:
+            embed = Embed(
+                title="Stance Not Set",
+                description="You must set a stance for or against the topic.",
+                color=0xE74C3C,
+            )
+            await update(interaction, embed=embed, ephemeral=True)
+            return
+        elif not result:
+            embed = Embed(
+                title="Invalid Candidate",
+                description="You can only vote for debaters.",
+                color=0xE74C3C,
+            )
+            await update(interaction, embed=embed, ephemeral=True)
+            return
+
+        embed = Embed(
+            title="Vote Cast", description="Your vote has been cast", color=0x2ECC71
+        )
+        await update(interaction, embed=embed, ephemeral=True)
+
+    @app_commands.command(
+        name="private", description="Convert a public debate into a private one."
+    )
+    @app_commands.checks.has_any_role(
+        "The Crown", "Chancellor", "Liege", "Prime Minister", "Minister"
+    )
+    async def private(self, interaction: discord.Interaction) -> None:
+        # These checks handle error messages automatically.
+        if not in_debate_room(self.bot, interaction):
+            return
+
+        channel = interaction.channel
+        room_number = get_room_number(self.bot, channel)
+        room: typing.Optional[DebateRoom] = get_room(self.bot, room_number)
+
+        if room.updating_topic:
+            await update(
+                interaction,
+                embed=Embed(
+                    title="Command Temporarily Disabled",
+                    description="This command only works once the topic has finished updating.",
+                    color=0xE74C3C,
+                ),
+                errored=True,
+                ephemeral=True,
+            )
+            return
+
+        if not room.check_match():
+            await update(
+                interaction,
+                embed=Embed(
+                    title="Command Disabled",
+                    description="This command only works if a debate match is ongoing.",
+                    color=0xE74C3C,
+                ),
+            )
+            return
+
+        if room.match.concluding:
+            await update(
+                interaction,
+                embed=Embed(
+                    title="Command Temporarily Disabled",
+                    description="This command only works once the debate match has finished concluding.",
+                    color=0xE74C3C,
+                ),
+                ephemeral=True,
+            )
+
+        if room.private:
+            embed = Embed(
+                title="Room Private Already",
+                description="This room is already private.",
+                color=0xF1C40F,
+            )
+            await update(interaction, embed=embed, ephemeral=True)
+            return
+
+        room.private = True
+
+        for member in room.vc.members:
+            await member.edit(mute=True)
+
+        if room.match:
+            room.match = None
+        room.purge_topics()
+        room.private_debaters = []
+
+        await update_im(bot=self.bot, room_num=room.number)
+        embed = Embed(
+            title="Room Converted",
+            description="This room is now private.",
+            color=0x2ECC71,
+        )
+        await update(interaction, embed=embed)
+
+    @app_commands.command(
+        name="public", description="Convert a private debate into a public one."
+    )
+    @app_commands.checks.has_any_role(
+        "The Crown", "Chancellor", "Liege", "Prime Minister", "Minister"
+    )
+    async def public(self, interaction: discord.Interaction) -> None:
+        # These checks handle error messages automatically.
+        if not in_debate_room(self.bot, interaction):
+            return
+
+        channel = interaction.channel
+        room_number = get_room_number(self.bot, channel)
+        room: typing.Optional[DebateRoom] = get_room(self.bot, room_number)
+
+        if room.updating_topic:
+            await update(
+                interaction,
+                embed=Embed(
+                    title="Command Temporarily Disabled",
+                    description="This command only works once the topic has finished updating.",
+                    color=0xE74C3C,
+                ),
+                errored=True,
+                ephemeral=True,
+            )
+            return
+
+        if not room.check_match():
+            await update(
+                interaction,
+                embed=Embed(
+                    title="Command Disabled",
+                    description="This command only works if a debate match is ongoing.",
+                    color=0xE74C3C,
+                ),
+            )
+            return
+
+        if room.match.concluding:
+            await update(
+                interaction,
+                embed=Embed(
+                    title="Command Temporarily Disabled",
+                    description="This command only works once the debate match has finished concluding.",
+                    color=0xE74C3C,
+                ),
+                ephemeral=True,
+            )
+
+        if room.private:
+            room.private = False
+        else:
+            embed = Embed(
+                title="Room Public Already",
+                description="This room is already public.",
+                color=0xF1C40F,
+            )
+            await update(interaction, embed=embed, ephemeral=True)
+            return
+
+        for member in room.vc.members:
+            await member.edit(mute=False)
+
+        if room.match:
+            room.match = None
+        room.purge_topics()
+        room.private_debaters = []
+
+        await update_im(bot=self.bot, room_num=room.number)
+        embed = Embed(
+            title="Room Converted",
+            description="This room is now public.",
+            color=0x2ECC71,
+        )
+        await update(interaction, embed=embed)
+
+    @app_commands.command(
+        name="unlock",
+        description="Unlock a member in a private room to allow them to debate or set topics.",
+    )
+    @app_commands.checks.has_any_role(
+        "The Crown", "Chancellor", "Liege", "Prime Minister", "Minister"
+    )
+    async def unlock(
+        self, interaction: discord.Interaction, participant: Member
+    ) -> None:
+        # These checks handle error messages automatically.
+        if not in_debate_room(self.bot, interaction):
+            return
+
+        channel = interaction.channel
+        room_number = get_room_number(self.bot, channel)
+        room: typing.Optional[DebateRoom] = get_room(self.bot, room_number)
+        unlocked_member = participant
+
+        if room.updating_topic:
+            await update(
+                interaction,
+                embed=Embed(
+                    title="Command Temporarily Disabled",
+                    description="This command only works once the topic has finished updating.",
+                    color=0xE74C3C,
+                ),
+                errored=True,
+                ephemeral=True,
+            )
+            return
+
+        if not room.check_match():
+            await update(
+                interaction,
+                embed=Embed(
+                    title="Command Disabled",
+                    description="This command only works if a debate match is ongoing.",
+                    color=0xE74C3C,
+                ),
+            )
+            return
+
+        if room.match.concluding:
+            await update(
+                interaction,
+                embed=Embed(
+                    title="Command Temporarily Disabled",
+                    description="This command only works once the debate match has finished concluding.",
+                    color=0xE74C3C,
+                ),
+                ephemeral=True,
+            )
+
+        if not room.private:
+            embed = Embed(
+                title="Command Unauthorized",
+                description="You can only unlock members in a private room.",
+                color=0xE74C3C,
+            )
+            await update(interaction, embed=embed, ephemeral=True)
+            return
+
+        if unlocked_member in [_ for _ in room.private_debaters]:
+            embed = Embed(
+                title="Participant Already Unlocked",
+                description="This member is already unlocked in this room.",
+                color=0xF1C40F,
+            )
+            await update(interaction, embed=embed, ephemeral=True)
+        else:
+            if unlocked_member in room.vc.members:
+                room.private_debaters.append(unlocked_member)
+                if room.match:
+                    await unlocked_member.edit(mute=True)
+                else:
+                    if room.current_topic:
+                        await unlocked_member.edit(mute=False)
+
+            embed = Embed(
+                title="Participant Unlocked",
+                description=f"{participant.mention} is now allowed to debate in the room.",
+                color=0x2ECC71,
+            )
+            embed.set_author(
+                name=f"{unlocked_member.username}", icon_url=unlocked_member.avatar.url
+            )
+            await update(interaction, embed=embed)
+
+    @app_commands.command(
+        name="conclude",
+        description="Unlock a member in a private room to allow them to debate or set topics.",
+    )
+    async def conclude(self, interaction: discord.Interaction) -> None:
+        # These checks handle error messages automatically.
+        if not in_debate_room(self.bot, interaction):
+            return
+
+        channel = interaction.channel
+        room_number = get_room_number(self.bot, channel)
+        room: typing.Optional[DebateRoom] = get_room(self.bot, room_number)
+
+        if room.updating_topic:
+            await update(
+                interaction,
+                embed=Embed(
+                    title="Command Temporarily Disabled",
+                    description="This command only works once the topic has finished updating.",
+                    color=0xE74C3C,
+                ),
+                errored=True,
+                ephemeral=True,
+            )
+            return
+
+        if not room.check_match():
+            await update(
+                interaction,
+                embed=Embed(
+                    title="Command Disabled",
+                    description="This command only works if a debate match is ongoing.",
+                    color=0xE74C3C,
+                ),
+            )
+            return
+
+        if room.match.concluding:
+            await update(
+                interaction,
+                embed=Embed(
+                    title="Command Temporarily Disabled",
+                    description="This command only works once the debate match has finished concluding.",
+                    color=0xE74C3C,
+                ),
+                ephemeral=True,
+            )
+
+        debaters, concluded, voters = room.vote_conclude(voter=interaction.user)
+        if concluded is None:
+            embed = Embed(
+                title="Already Concluding",
+                description="The debate is already concluding.",
+                color=0xF1C40F,
+            )
+            await update(interaction, embed=embed, ephemeral=True)
+            return
+        else:
+            embed = Embed(
+                title="Conclude Vote Cast",
+                description="You have voted to conclude the debate.",
+                color=0xEC6A5C,
+            )
+            await update(interaction, embed)
+
+        if concluded:
+            room.match.concluding = True
+            embed = Embed(
+                title="Debate Concluding",
+                description="Ratings are being updated. Debate specific commands will not run.",
+                color=0xE67E22,
+            )
+            await interaction.channel.send(embed=embed)
+
+            if room.match:
+                for debater in debaters:
+                    # Mute
+                    if debater.member in room.vc.members:
+                        await debater.member.edit(mute=True)
+            else:
+                if room.private:
+                    for member in room.private_debaters:
+                        await member.edit(mute=False)
+                else:
+                    for member in room.vc.members:
+                        await member.edit(mute=False)
+
+            for debater in debaters:
+                await room.vc.set_permissions(debater.member, overwrite=None)
+
+            if room.match:
+                if room.match.check_voters():
+                    for debater in debaters:
+                        debater_rating = float(
+                            20 * ((debater.mu_post - 3 * debater.sigma_post) + 25)
+                        )
+                        debater_data = await self.bot.engine.find_one(
+                            MemberModel, MemberModel.member == debater.member.id
+                        )
+                        debater_data.mu = debater.mu_post
+                        debater_data.sigma = debater.sigma_post
+                        debater_data.rating = debater_rating
+
+                        await self.bot.engine.save(debater_data)
+
+                        embed = Embed(title="Rating Change", color=0xEC6A5C)
+                        embed.set_footer(
+                            text=debater.member.display_name,
+                            icon_url=debater.member.avatar.url,
+                        )
+                        embed.add_field(
+                            name="Mean",
+                            value=f"```diff\n"
+                            f"- {float(debater.mu_pre): .2f}\n"
+                            f"+ {float(debater.mu_post): .2f}\n"
+                            f"```",
+                            inline=True,
+                        )
+                        embed.add_field(
+                            name="Confidence",
+                            value=f"```diff\n"
+                            f"- {float(debater.sigma_pre): .2f}\n"
+                            f"+ {float(debater.sigma_post): .2f}\n"
+                            f"```",
+                            inline=True,
+                        )
+                        embed.add_field(
+                            name="Rating",
+                            value=f"```diff\n"
+                            f"- {float(20 * ((debater.mu_pre - 3 * debater.sigma_pre) + 25)): .2f}\n"
+                            f"+ {float(20 * ((debater.mu_post - 3 * debater.sigma_post) + 25)): .2f}\n"
+                            f"```",
+                            inline=True,
+                        )
+
+                        fifo: Queue = self.bot.state["debate_feed_fifo"]
+                        fifo.put(embed)
+
+                        # Update Roles
+                        floored_rating = floor_rating(
+                            float(
+                                20 * ((debater.mu_post - 3 * debater.sigma_post) + 25)
+                            )
+                        )
+                        rank_role: Optional[Role] = None
+                        for rank, rating in RANK_RATING_MAP.items():
+                            if math.isclose(floored_rating, rating, rel_tol=1e-04):
+                                rank_role = self.bot.state["map_roles"][rank]
+                                break
+
+                        if rank_role.id not in debater.member.role_ids:
+                            await debater.member.add_role(
+                                rank_role, reason="Added at the end of a debate match."
+                            )
+
+                        for rank, rating in RANK_RATING_MAP.items():
+                            rank_role_id = self.bot.state["map_roles"][rank]
+                            if int(rank_role_id) in debater.member.role_ids:
+                                if int(rank_role_id) != int(rank_role.id):
+                                    await debater.member.remove_role(
+                                        rank_role_id,
+                                        reason="Removed at the end of a debate match.",
+                                    )
+
+                    embed = Embed(title="Voter Log", color=0xEC6A5C)
+                    value = ""
+                    debaters_by_votes = sorted(
+                        room.match.get_debaters(), key=lambda d: d.votes
+                    )
+                    for debater in debaters_by_votes:
+                        voters = sorted(debater.votes, key=lambda p: p.total_votes())
+                        for voter in voters:
+                            value += f"{voter.type()} {voter.member.mention} → {debater.type()} {debater.member.mention}\n"
+                    embed.description = value
+                    fifo: Queue = self.bot.state["debate_feed_fifo"]
+                    fifo.put(embed)
+
+            # Update topic
+            current_topic = room.current_topic
+            if current_topic:
+                await update_im(
+                    bot=self.bot,
+                    room_num=get_room_number(bot=self.bot, channel=room.vc),
+                )
+                room.remove_topic(current_topic.author)
+                room.vote_topic(current_topic.author, current_topic.author)
+            else:
+                await update_im(
+                    bot=self.bot,
+                    room_num=get_room_number(bot=self.bot, channel=room.vc),
+                )
+
+            room.updating_topic = True
+            await update_topic(bot=self.bot, room=room)
+            room.updating_topic = False
+
+            # Clear private debaters
+            room.private_debaters = []
+
+            if room.match:
+                check_voters = room.match.check_voters()
+                room.match.concluding = False
+                room.match.concluded = True
+            else:
+                check_voters = None
+
+            # Remove voters from data set
+            room.remove_conclude_voters()
+            room.match = None  # Clear match
+
+            embed = Embed(
+                title="Debate Concluded",
+                description="Ratings have been updated.",
+                color=0x2ECC71,
+            )
+            if not check_voters:
+                embed.description = (
+                    "Ratings have not been updated due to lack of voters."
+                )
+            await room.vc.send(embed=embed)
+        else:
+            if not debaters:
+                return
+            if len(debaters) == 0:
+                embed = Embed(
+                    title="Conclude Failed",
+                    description="You cannot conclude an empty debate room.",
+                    color=0xE74C3C,
+                )
+                await update(interaction, embed=embed, ephemeral=True)
+
+    @app_commands.command(
+        name="consent",
+        description="Consent to being recorded to speak in the room.",
+    )
+    async def consent(self, interaction: discord.Interaction) -> None:
+        # These checks handle error messages automatically.
+        if not in_debate_room(self.bot, interaction):
+            return
+
+        channel = interaction.channel
+        room_number = get_room_number(self.bot, channel)
+        room: typing.Optional[DebateRoom] = get_room(self.bot, room_number)
+        author = interaction.user
+
+        if room.updating_topic:
+            await update(
+                interaction,
+                embed=Embed(
+                    title="Command Temporarily Disabled",
+                    description="This command only works once the topic has finished updating.",
+                    color=0xE74C3C,
+                ),
+                errored=True,
+                ephemeral=True,
+            )
+            return
+
+        if not room.check_match():
+            await update(
+                interaction,
+                embed=Embed(
+                    title="Command Disabled",
+                    description="This command only works if a debate match is ongoing.",
+                    color=0xE74C3C,
+                ),
+            )
+            return
+
+        if room.match.concluding:
+            await update(
+                interaction,
+                embed=Embed(
+                    title="Command Temporarily Disabled",
+                    description="This command only works once the debate match has finished concluding.",
+                    color=0xE74C3C,
+                ),
+                ephemeral=True,
+            )
+
+        if room.studio:
+            room.studio_participants.append(author)
+            if room.match:
+                if room.match.check_debater(member=author):
+                    await author.edit(mute=False)
+            else:
+                await author.edit(mute=False)
+            embed = Embed(
+                title="Consent Received",
+                description=f"{author.mention} has consented to being recorded.",
+                color=0x2ECC71,
+            )
+            await update(interaction, embed=embed)
+            return
+        else:
+            embed = Embed(
+                title="Command Unauthorized",
+                description=f"This is not a studio room.",
+                color=0xE74C3C,
+            )
+            await update(interaction, embed=embed, ephemeral=True)
+            return
+
+    @app_commands.command(
+        name="proposition",
+        description="Get a random proposition.",
+    )
+    async def proposition(self, interaction: discord.Interaction) -> None:
+        embed = Embed(
+            title="Random Proposition",
+            description=f"{random.choice(self.bot.state['propositions']).strip()}",
+        )
+        await update(interaction, embed=embed)
+
+    @commands.Cog.listener()
+    async def on_message(self, message):
+        if message.author == self.bot.user:
+            # Do nothing if the message is persistent embed
+            if len(message.embeds) > 0:
+                if message.embeds[0].title.startswith("Debate Room"):
+                    return
+
+        if message.channel in [room.vc for room in self.bot.state["debate_rooms"]]:
+            # Get number
+            room_num = get_room_number(self.bot, message.channel)
+
+            # Delete interface message
+            index = room_num - 1
+            im_del = self.bot.state["interface_messages"][index]
+            try:
+                im_del = await message.channel.fetch_message(im_del)
+            except discord.errors.NotFound as e_info:
+                im_del = None
+
+            try:
+                if im_del:
+                    await im_del.delete()
+            except discord.errors.NotFound as e_info:
+                return
+
+    @commands.Cog.listener()
+    async def on_raw_message_delete(self, payload):
+        channel = self.bot.get_channel(payload.channel_id)
+        if channel in [room.vc for room in self.bot.state["debate_rooms"]]:
+            # Add interface message when embed is deleted
+            if payload.message_id in self.bot.state["interface_messages"]:
+                index = get_room_number(self.bot, channel) - 1
+                if not self.bot.state["exiting"]:
+                    im = await add_interface_message(self.bot, index)
+
+    @commands.Cog.listener()
+    async def on_raw_bulk_message_delete(self, payload):
+        channel = self.bot.get_channel(payload.channel_id)
+        for message_id in payload.message_ids:
+            if channel in [room.vc for room in self.bot.state["debate_rooms"]]:
+                # Add interface message when embed is deleted
+                if message_id in self.bot.state["interface_messages"]:
+                    index = get_room_number(self.bot, channel) - 1
+                    if not self.bot.state["exiting"]:
+                        im = await add_interface_message(self.bot, index)
+
+    @commands.Cog.listener()
+    async def on_member_join(self, member: Member):
+        if member.bot:
+            await member.add_roles(self.bot.state["map_roles"]["role_bot"])
+            return
+
+        member_data = await self.bot.engine.find_one(
+            MemberModel, MemberModel.member == member.id
+        )
+        if member_data:
+            floored_rating = floor_rating(
+                float(20 * ((member_data.mu - 3 * member_data.sigma) + 25))
+            )
+            current_rank_role: typing.Optional[Role] = None
+            for rank, rating in RANK_RATING_MAP.items():
+                if math.isclose(floored_rating, rating, rel_tol=1e-04):
+                    current_rank_role = self.bot.state["map_roles"][rank]
+                    break
+
+            if current_rank_role not in member.roles:
+                await member.add_roles(
+                    current_rank_role, reason="Added during member join."
+                )
+
+            for rank, rating in RANK_RATING_MAP.items():
+                rank_role = self.bot.state["map_roles"][rank]
+                if rank_role in member.roles:
+                    if rank_role != current_rank_role:
+                        await member.remove_roles(
+                            rank_role, reason="Removed during member join."
+                        )
+        else:
+            member_data = MemberModel(member=member)
+            await self.bot.engine.save(member_data)
+
+    @commands.Cog.listener()
+    async def on_voice_state_update(self, member, before, after):
+        debate_rooms: typing.List[DebateRoom] = self.bot.state["debate_rooms"]
+        roles = self.bot.state["map_roles"]
+        checked_roles = [
+            roles["role_chancellor"],
+            roles["role_liege"],
+            roles["role_prime_minister"],
+            roles["role_minister"],
+        ]
+
+        # Do nothing if mute event
+        if before.mute and not after.mute:
+            async for entry in member.guild.audit_logs(
+                limit=1, action=discord.AuditLogAction.member_update
+            ):
+                if entry.before.mute and not entry.after.mute:
+                    for role in checked_roles:
+                        if role in entry.user.roles:
+                            if roles["role_detained"] in entry.target.roles:
+                                if role not in entry.target.roles:
+                                    await entry.target.remove_roles(
+                                        roles["role_detained"]
+                                    )
+            return
+        if not before.mute and after.mute:
+            async for entry in member.guild.audit_logs(
+                limit=1, action=discord.AuditLogAction.member_update
+            ):
+                if not entry.before.mute and entry.after.mute:
+                    for role in checked_roles:
+                        if role in entry.user.roles:
+                            if roles["role_detained"] not in entry.target.roles:
+                                if role not in entry.target.roles:
+                                    await entry.target.add_roles(roles["role_detained"])
+            return
+
+        if before.deaf and not after.deaf:
+            return
+        if not before.deaf and after.deaf:
+            return
+
+        if before.self_mute and not after.self_mute:
+            return
+        if not before.self_mute and after.self_mute:
+            return
+
+        if before.self_deaf and not after.self_deaf:
+            return
+        if not before.self_deaf and after.self_deaf:
+            return
+
+        if before.self_stream and not after.self_stream:
+            return
+        if not before.self_stream and after.self_stream:
+            return
+
+        if before.self_video and not after.self_video:
+            return
+        if not before.self_video and after.self_video:
+            return
+
+        async def join_room():
+            after_vc = after.channel
+            room_after_number = get_room_number(self.bot, after_vc)
+            room_after = None
+            if room_after_number:
+                room_after = get_room(self.bot, room_after_number)
+                room_after.add_topic_voter(member)
+                room_after.reset_topic_creation(member)
+
+                if room_after.match:
+                    participant = room_after.match.get_participant(member)
+                    if participant:
+                        participant.session_start = datetime.utcnow()
+
+                # Allow members to send messages in linked text chat
+                await room_after.vc.set_permissions(member, send_messages=True)
+
+                if room_after.match:
+                    if room_after.match.check_debater(member):
+                        if room_after.private:
+                            if room_after.studio:
+                                if (
+                                    self.bot.state["map_roles"]["role_detained"]
+                                    in member.roles
+                                ):
+                                    await member.edit(mute=True)
+                                else:
+                                    if member in room_after.private_debaters:
+                                        if member in room_after.studio_participants:
+                                            await member.edit(mute=False)
+                                    else:
+                                        if member not in room_after.studio_participants:
+                                            await member.edit(mute=True)
+                            else:
+                                if (
+                                    self.bot.state["map_roles"]["role_detained"]
+                                    in member.roles
+                                ):
+                                    await member.edit(mute=True)
+                                else:
+                                    if member in room_after.private_debaters:
+                                        await member.edit(mute=False)
+                                    else:
+                                        await member.edit(mute=True)
+                        else:
+                            if room_after.studio:
+                                if (
+                                    self.bot.state["map_roles"]["role_detained"].id
+                                    in member.roles
+                                ):
+                                    await member.edit(mute=True)
+                                else:
+                                    if member in room_after.studio_participants:
+                                        await member.edit(mute=False)
+                            else:
+                                if (
+                                    self.bot.state["map_roles"]["role_detained"]
+                                    in member.roles
+                                ):
+                                    await member.edit(mute=True)
+                                else:
+                                    await member.edit(mute=False)
+                    else:
+                        if room_after.studio:
+                            if member not in room_after.studio_participants:
+                                await member.edit(mute=True)
+                        else:
+                            await member.edit(mute=True)
+                else:
+                    if room_after.private:
+                        if room_after.studio:
+                            if (
+                                self.bot.state["map_roles"]["role_detained"]
+                                in member.roles
+                            ):
+                                await member.edit(mute=True)
+                            else:
+                                if member in room_after.private_debaters:
+                                    if member in room_after.studio_participants:
+                                        await member.edit(mute=False)
+                                    else:
+                                        await member.edit(mute=True)
+                                else:
+                                    if member in room_after.studio_participants:
+                                        await member.edit(mute=False)
+                                    else:
+                                        await member.edit(mute=True)
+                        else:
+                            if (
+                                self.bot.state["map_roles"]["role_detained"]
+                                in member.roles
+                            ):
+                                await member.edit(mute=True)
+                            else:
+                                if member in room_after.private_debaters:
+                                    await member.edit(mute=False)
+                                else:
+                                    await member.edit(mute=True)
+                    else:
+                        if room_after.studio:
+                            if (
+                                self.bot.state["map_roles"]["role_detained"]
+                                in member.roles
+                            ):
+                                await member.edit(mute=True)
+                            else:
+                                if member in room_after.studio_participants:
+                                    await member.edit(mute=False)
+                                else:
+                                    await member.edit(mute=True)
+                        else:
+                            if (
+                                self.bot.state["map_roles"]["role_detained"]
+                                in member.roles
+                            ):
+                                await member.edit(mute=True)
+                            else:
+                                await member.edit(mute=False)
+
+        async def leave_room():
+            before_vc = before.channel
+            room_before_number = get_room_number(self.bot, before_vc)
+            room_before = get_room(self.bot, room_before_number)
+            if room_before_number:
+                room_before = get_room(self.bot, room_before_number)
+                room_before.remove_topic_voter(member)
+                room_before.remove_priority_from_topic(member)
+
+                active_debaters = []
+                if room_before.match:
+                    participant = room_before.match.get_participant(member)
+                    if participant:
+                        participant.session_end = datetime.utcnow()
+                        participant.update_duration()
+
+                    debaters = [d.member for d in room_before.match.get_debaters()]
+
+                    for voice_member in before_vc.members:
+                        if voice_member in debaters:
+                            active_debaters.append(voice_member)
+
+                if room_before:
+                    await room_before.vc.set_permissions(member, overwrite=None)
+
+                    # Remove Recording Session
+                    try:
+                        if member.id == room_before.studio_engineer:
+                            await asyncio.wait_for(asyncio.sleep(180), timeout=120)
+                    except asyncio.TimeoutError:
+                        room_before.studio = False
+                        room_before.studio_engineer = None
+                        await update_im(bot=self.bot, room_num=room_before.number)
+
+                    # Delete if not working
+                    room_before.updating_topic = True
+                    await update_topic(self.bot, room_before)
+                    room_before.updating_topic = False
+
+        if before.channel is None and after.channel:
+            if before.channel is None and after.channel in [
+                room.vc for room in debate_rooms
+            ]:
+                await join_room()
+                return
+
+        if before.channel and after.channel is None:
+            if (
+                before.channel in [room.vc for room in debate_rooms]
+                and after.channel is None
+            ):
+                await leave_room()
+                return
+
+        after_list = []
+        if after.channel:
+            after_list = list([room.vc for room in debate_rooms])
+            if after.channel in after_list:
+                after_list.remove(after.channel)
+        else:
+            return
+
+        before_list = []
+        if before.channel:
+            before_list = list([room.vc for room in debate_rooms])
+            if before.channel in before_list:
+                before_list.remove(before.channel)
+        else:
+            return
+
+        if after_list and before_list:
+            if before.channel not in after_list and after.channel in before_list:
+                await join_room()
+                await leave_room()
+                return
+            elif before.channel in after_list and after.channel not in before_list:
+                await join_room()
+                await leave_room()
+                return
+            elif before.channel in after_list and after.channel in before_list:
+                await join_room()
+                await leave_room()
+
+    async def debate_feed_updater(self):
+        while self.bot.state["debates_enabled"]:
+            fifo: Queue = self.bot.state["debate_feed_fifo"]
+            while fifo.qsize() > 0:
+                embed = fifo.get()
+                debate_feed = self.bot.state["map_channels"]["tc_debate_feed"]
+                await debate_feed.send(embed=embed)
+            await asyncio.sleep(0.5)
+
+
+@app_commands.default_permissions(send_messages=True)
+class Studio(
+    commands.GroupCog,
+    name="studio",
+    description="Control the recording status of a debate room.",
+):
+    def __init__(self, bot: ArgusClient) -> None:
+        self.bot = bot
+        super().__init__()
+
+    @app_commands.command(
+        name="start",
+        description="Start a recording session.",
+    )
+    async def start(self, interaction: discord.Interaction) -> None:
+        # These checks handle error messages automatically.
+        if not in_debate_room(self.bot, interaction):
+            return
+
+        channel = interaction.channel
+        room_number = get_room_number(self.bot, channel)
+        room: typing.Optional[DebateRoom] = get_room(self.bot, room_number)
+        author = interaction.user
+
+        if room.updating_topic:
+            await update(
+                interaction,
+                embed=Embed(
+                    title="Command Temporarily Disabled",
+                    description="This command only works once the topic has finished updating.",
+                    color=0xE74C3C,
+                ),
+                errored=True,
+                ephemeral=True,
+            )
+            return
+
+        if room.check_match():
+            await update(
+                interaction,
+                embed=Embed(
+                    title="Command Unauthorized",
+                    description=f"You can only claim a room without an existing match.",
+                    color=0xE74C3C,
+                ),
+            )
+            return
+
+        if room.studio:
+            embed = Embed(
+                title="Command Unauthorized",
+                description=f"This room is already claimed by f{room.studio_engineer.mention}.",
+                color=0xE74C3C,
+            )
+            await update(interaction, embed=embed, ephemeral=True)
+            return
+        else:
+            room.studio = True
+            room.studio_engineer = author.id
+
+            await interaction.response.defer()
+
+            for member in room.vc.members:
+                await member.edit(mute=True)
+
+            await update_im(bot=self.bot, room_num=room.number)
+
+            embed = Embed(
+                title="Studio Initialized",
+                description="This room is potentially being recorded.",
+                color=0x2ECC71,
+            )
+            await update(interaction, embed=embed)
+            return
+
+    @app_commands.command(
+        name="stop",
+        description="Stop a recording session.",
+    )
+    async def stop(self, interaction: discord.Interaction) -> None:
+        # These checks handle error messages automatically.
+        if not in_debate_room(self.bot, interaction):
+            return
+
+        channel = interaction.channel
+        room_number = get_room_number(self.bot, channel)
+        room: typing.Optional[DebateRoom] = get_room(self.bot, room_number)
+        author = interaction.user
+
+        if room.updating_topic:
+            await update(
+                interaction,
+                embed=Embed(
+                    title="Command Temporarily Disabled",
+                    description="This command only works once the topic has finished updating.",
+                    color=0xE74C3C,
+                ),
+                errored=True,
+                ephemeral=True,
+            )
+            return
+
+        if not room.studio:
+            embed = Embed(
+                title="Command Unauthorized",
+                description=f"This is not a studio room.",
+                color=0xE74C3C,
+            )
+            await update(interaction, embed=embed, ephemeral=True)
+            return
+        else:
+            if author.id != room.studio_engineer:
+                embed = Embed(
+                    title="Command Unauthorized",
+                    description=f"Only the studio engineer can run this command.",
+                    color=0xE74C3C,
+                )
+                await update(interaction, embed=embed, ephemeral=True)
+                return
+
+            await interaction.response.defer()
+
+            room.studio = False
+            room.studio_engineer = None
+
+            if not room.match:
+                for member in room.vc.members:
+                    await member.edit(mute=False)
+
+            await update_im(bot=self.bot, room_num=room.number)
+
+            embed = Embed(
+                title="Studio Ended",
+                description="No one is allowed to record in this room anymore.",
+                color=0x2ECC71,
+            )
+            await update(interaction, embed=embed)
+            return
+
 
 async def setup(bot: ArgusClient) -> None:
     await bot.add_cog(
@@ -716,4 +2124,7 @@ async def setup(bot: ArgusClient) -> None:
     )
     await bot.add_cog(
         Debate(bot), guilds=[discord.Object(id=bot.config["global"]["guild_id"])]
+    )
+    await bot.add_cog(
+        Studio(bot), guilds=[discord.Object(id=bot.config["global"]["guild_id"])]
     )

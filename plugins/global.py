@@ -32,6 +32,14 @@ class Global(
             )
         )
 
+    @commands.Cog.listener()
+    async def on_connect(self):
+        self.bot.logger.info("Successfully resumed connection to Gateway.")
+
+    @commands.Cog.listener()
+    async def on_disconnect(self):
+        self.bot.logger.warning("Disconnected from Gateway.")
+
     @app_commands.command(
         name="enable",
         description="Enable the bot for server users.",
