@@ -1804,28 +1804,8 @@ class Debate(commands.Cog):
 
         # Do nothing if mute event
         if before.mute and not after.mute:
-            async for entry in member.guild.audit_logs(
-                limit=1, action=discord.AuditLogAction.member_update
-            ):
-                if entry.before.mute and not entry.after.mute:
-                    for role in checked_roles:
-                        if role in entry.user.roles:
-                            if roles["role_detained"] in entry.target.roles:
-                                if role not in entry.target.roles:
-                                    await entry.target.remove_roles(
-                                        roles["role_detained"]
-                                    )
             return
         if not before.mute and after.mute:
-            async for entry in member.guild.audit_logs(
-                limit=1, action=discord.AuditLogAction.member_update
-            ):
-                if not entry.before.mute and entry.after.mute:
-                    for role in checked_roles:
-                        if role in entry.user.roles:
-                            if roles["role_detained"] not in entry.target.roles:
-                                if role not in entry.target.roles:
-                                    await entry.target.add_roles(roles["role_detained"])
             return
 
         if before.deaf and not after.deaf:

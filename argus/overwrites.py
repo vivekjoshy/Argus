@@ -125,6 +125,37 @@ MODERATION_BOT = PermissionOverwrite(
     create_private_threads=True,
     send_messages_in_threads=True,
 )
+GENERAL_PARLIAMENT = PermissionOverwrite(
+    send_messages=False, connect=False, add_reactions=False
+)
+MEMBER_PARLIAMENT = PermissionOverwrite(
+    connect=True,
+    priority_speaker=False,
+    read_messages=True,
+    read_message_history=True,
+    add_reactions=True,
+    send_messages=True,
+    manage_messages=False,
+    embed_links=True,
+    attach_files=True,
+)
+SPEAKER_PARLIAMENT = PermissionOverwrite(
+    connect=True,
+    priority_speaker=True,
+    read_messages=True,
+    read_message_history=True,
+    add_reactions=True,
+    send_messages=True,
+    manage_messages=True,
+    embed_links=True,
+    attach_files=True,
+    mute_members=True,
+)
+MANAGE_PARLIAMENT = PermissionOverwrite(
+    send_messages=False,
+    manage_messages=True,
+    connect=True,
+)
 
 OVERWRITE_MAP = {
     "information": {
@@ -276,6 +307,36 @@ OVERWRITE_MAP = {
         "role_logs": BASE,
         "role_detained": NEGATIVE,
         "role_everyone": GENERAL,
+    },
+    "parliament": {
+        "role_moderation_bot": MODERATION_BOT,
+        "role_chancellor": SPEAKER_PARLIAMENT,
+        "role_liege": MEMBER_PARLIAMENT,
+        "role_prime_minister": GENERAL_PARLIAMENT,
+        "role_minister": GENERAL_PARLIAMENT,
+        "role_host": GENERAL_PARLIAMENT,
+        "role_bot": BASE,
+        "role_judge": GENERAL_PARLIAMENT,
+        "role_citizen": GENERAL_PARLIAMENT,
+        "role_member": GENERAL_PARLIAMENT,
+        "role_logs": BASE,
+        "role_detained": NEGATIVE,
+        "role_everyone": GENERAL_PARLIAMENT,
+    },
+    "house-of-commons": {
+        "role_moderation_bot": MODERATION_BOT,
+        "role_chancellor": MANAGE_PARLIAMENT,
+        "role_liege": MANAGE_PARLIAMENT,
+        "role_prime_minister": SPEAKER_PARLIAMENT,
+        "role_minister": MEMBER_PARLIAMENT,
+        "role_host": GENERAL_PARLIAMENT,
+        "role_bot": BASE,
+        "role_judge": GENERAL_PARLIAMENT,
+        "role_citizen": GENERAL_PARLIAMENT,
+        "role_member": GENERAL_PARLIAMENT,
+        "role_logs": BASE,
+        "role_detained": NEGATIVE,
+        "role_everyone": GENERAL_PARLIAMENT,
     },
     "debate": {
         "role_moderation_bot": MODERATION_BOT,

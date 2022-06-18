@@ -75,6 +75,9 @@ class Setup(commands.GroupCog, name="setup"):
             "category_community": None,
             "tc_general": None,
             "tc_memes": None,
+            "category_parliament": None,
+            "vc_house_of_lords": None,
+            "vc_house_of_commons": None,
             "category_debate": None,
             "category_logs": None,
             "tc_moderator_actions": None,
@@ -530,6 +533,30 @@ class Setup(commands.GroupCog, name="setup"):
             ),
         )
 
+        # Setup Parliament
+        channels["category_parliament"] = await guild.create_category_channel(
+            name="Parliament",
+            overwrites=generate_overwrites(
+                interaction, roles=roles, channel="parliament"
+            ),
+        )
+
+        channels["vc_house_of_lords"] = await guild.create_voice_channel(
+            name="House of Lords",
+            category=channels["category_parliament"],
+            overwrites=generate_overwrites(
+                interaction, roles=roles, channel="parliament"
+            ),
+        )
+
+        channels["vc_house_of_commons"] = await guild.create_voice_channel(
+            name="House of Commons",
+            category=channels["category_parliament"],
+            overwrites=generate_overwrites(
+                interaction, roles=roles, channel="house_of_commons"
+            ),
+        )
+
         # Setup Debate Category
         channels["category_debate"] = await guild.create_category_channel(
             name="Debate",
@@ -882,7 +909,7 @@ class Migrate(commands.GroupCog, name="migrate"):
         # Prime Local Cache
         roles = {}
         for role in guild.roles:
-            if not role.managed and not role.is_default():
+            if not role.managed:
                 roles[DB_ROLE_NAME_MAP[role.name]] = role
 
         # Delete Channels

@@ -46,6 +46,9 @@ DB_CHANNEL_NAME_MAP = {
     "Community": "category_community",
     "general": "tc_general",
     "memes": "tc_memes",
+    "Parliament": "category_parliament",
+    "House of Lords": "vc_house_of_lords",
+    "House of Commons": "vc_house_of_commons",
     "Debate": "category_debate",
 }
 
@@ -160,14 +163,9 @@ BOT_DESCRIPTION = "Elections and Debates for Discord Servers"
 # Bot Plugins Directories
 PLUGINS = [
     "plugins.debate",
+    "plugins.election",
     "plugins.global",
     "plugins.layout",
     "plugins.meta",
     "plugins.security",
 ]
-
-
-if __name__ == "__main__":
-    print(CHANNEL_SORT_ORDER)
-    keys = [k for k, v in CHANNEL_SORT_ORDER.items() if "memes"]
-    print(keys)
