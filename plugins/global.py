@@ -5,6 +5,12 @@ from typing import List
 import discord
 import pytz
 from discord import app_commands, Interaction, Embed
+from discord.app_commands import (
+    AppCommandError,
+    MissingAnyRole,
+    MissingRole,
+    MissingPermissions,
+)
 from discord.ext import commands
 
 from argus.client import ArgusClient
@@ -43,6 +49,39 @@ class Global(
     @commands.Cog.listener()
     async def on_disconnect(self):
         self.bot.logger.warning("Disconnected from Gateway.")
+
+    @commands.Cog.listener()
+    async def on_error(self, interaction: Interaction, error: AppCommandError):
+        if isinstance(error, MissingAnyRole):
+            await update(
+                interaction,
+                embed=Embed(
+                    title="Command Unauthorized",
+                    description="You are not authorized to run this command.",
+                    color=0xE74C3C,
+                ),
+            )
+            return
+        if isinstance(error, MissingRole):
+            await update(
+                interaction,
+                embed=Embed(
+                    title="Command Unauthorized",
+                    description="You are not authorized to run this command.",
+                    color=0xE74C3C,
+                ),
+            )
+            return
+        if isinstance(error, MissingPermissions):
+            await update(
+                interaction,
+                embed=Embed(
+                    title="Command Unauthorized",
+                    description="You are not authorized to run this command.",
+                    color=0xE74C3C,
+                ),
+            )
+            return
 
     @app_commands.command(
         name="enable",

@@ -426,6 +426,7 @@ class Setup(commands.GroupCog, name="setup"):
             overwrites=generate_overwrites(
                 interaction, roles=roles, channel="announcements"
             ),
+            news=True,
         )
 
         await guild.public_updates_channel.edit(

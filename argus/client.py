@@ -1,9 +1,17 @@
 from queue import Queue
 
 import discord
+from discord import Interaction, Embed
+from discord.app_commands import (
+    AppCommandError,
+    MissingAnyRole,
+    MissingRole,
+    MissingPermissions,
+)
 from discord.ext import commands
 
 from argus.constants import BOT_DESCRIPTION, PLUGINS
+from argus.utils import update
 
 
 class ArgusClient(commands.Bot):
@@ -27,22 +35,12 @@ class ArgusClient(commands.Bot):
             "debates_enabled": False,
             "debate_rooms": [],
             "debate_room_maps": [],
-            "debate_room_tcs": [],
             "interface_messages": [],
             "exiting": False,
             "debate_feed_fifo": Queue(),
             "voice_channel_update_task": None,
             "debate_feed_updater_task": None,
-            "vc_create_room": 0,
-            "map_lounge_vcs": {},
-            "map_lounge_vc_to_tc": {},
-            "map_delete_lounge_room": {},
-            "presentation_sc": None,
-            "presentation_chat_tc": None,
-            "presentation_questions": None,
-            "events_vc": None,
-            "events_tc_1": None,
-            "events_tc_2": None,
+            "propositions": [],
         }
 
         super().__init__(
@@ -52,6 +50,7 @@ class ArgusClient(commands.Bot):
             *args,
             **kwargs,
         )
+        self.tree.on_error = self.app_command_error
 
     async def setup_hook(self):
         # Load Extensions
@@ -66,3 +65,38 @@ class ArgusClient(commands.Bot):
                 self.logger.exception(f"Failed to load Plugin", extension=extension)
             except Exception as e:
                 self.logger.exception("Core Error")
+
+    async def app_command_error(self, interaction: Interaction, error: AppCommandError):
+        if isinstance(error, MissingAnyRole):
+            await update(
+                interaction,
+                embed=Embed(
+                    title="Command Unauthorized",
+                    description="You are not authorized to run this command.",
+                    color=0xE74C3C,
+                ),
+                ephemeral=True,
+            )
+            return
+        if isinstance(error, MissingRole):
+            await update(
+                interaction,
+                embed=Embed(
+                    title="Command Unauthorized",
+                    description="You are not authorized to run this command.",
+                    color=0xE74C3C,
+                ),
+                ephemeral=True,
+            )
+            return
+        if isinstance(error, MissingPermissions):
+            await update(
+                interaction,
+                embed=Embed(
+                    title="Command Unauthorized",
+                    description="You are not authorized to run this command.",
+                    color=0xE74C3C,
+                ),
+                ephemeral=True,
+            )
+            return

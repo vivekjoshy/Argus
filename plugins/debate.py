@@ -10,6 +10,12 @@ import discord
 import openskill
 import pymongo
 from discord import app_commands, Member, Interaction, Embed, Role
+from discord.app_commands import (
+    MissingRole,
+    MissingAnyRole,
+    MissingPermissions,
+    AppCommandError,
+)
 from discord.ext import commands
 
 from argus.client import ArgusClient
@@ -399,6 +405,39 @@ class Topic(
         self.bot = bot
         super().__init__()
 
+    @commands.Cog.listener()
+    async def on_error(self, interaction: Interaction, error: AppCommandError):
+        if isinstance(error, MissingAnyRole):
+            await update(
+                interaction,
+                embed=Embed(
+                    title="Command Unauthorized",
+                    description="You are not authorized to run this command.",
+                    color=0xE74C3C,
+                ),
+            )
+            return
+        if isinstance(error, MissingRole):
+            await update(
+                interaction,
+                embed=Embed(
+                    title="Command Unauthorized",
+                    description="You are not authorized to run this command.",
+                    color=0xE74C3C,
+                ),
+            )
+            return
+        if isinstance(error, MissingPermissions):
+            await update(
+                interaction,
+                embed=Embed(
+                    title="Command Unauthorized",
+                    description="You are not authorized to run this command.",
+                    color=0xE74C3C,
+                ),
+            )
+            return
+
     @app_commands.command(
         name="propose",
         description="Initialize the skills of members in a blank server.",
@@ -707,6 +746,39 @@ class Debate(commands.Cog):
     def __init__(self, bot: ArgusClient) -> None:
         self.bot = bot
         super().__init__()
+
+    @commands.Cog.listener()
+    async def on_error(self, interaction: Interaction, error: AppCommandError):
+        if isinstance(error, MissingAnyRole):
+            await update(
+                interaction,
+                embed=Embed(
+                    title="Command Unauthorized",
+                    description="You are not authorized to run this command.",
+                    color=0xE74C3C,
+                ),
+            )
+            return
+        if isinstance(error, MissingRole):
+            await update(
+                interaction,
+                embed=Embed(
+                    title="Command Unauthorized",
+                    description="You are not authorized to run this command.",
+                    color=0xE74C3C,
+                ),
+            )
+            return
+        if isinstance(error, MissingPermissions):
+            await update(
+                interaction,
+                embed=Embed(
+                    title="Command Unauthorized",
+                    description="You are not authorized to run this command.",
+                    color=0xE74C3C,
+                ),
+            )
+            return
 
     @app_commands.command(
         name="for", description="Set you stance as for the topic in a debate room."
@@ -1953,6 +2025,39 @@ class Studio(
     def __init__(self, bot: ArgusClient) -> None:
         self.bot = bot
         super().__init__()
+
+    @commands.Cog.listener()
+    async def on_error(self, interaction: Interaction, error: AppCommandError):
+        if isinstance(error, MissingAnyRole):
+            await update(
+                interaction,
+                embed=Embed(
+                    title="Command Unauthorized",
+                    description="You are not authorized to run this command.",
+                    color=0xE74C3C,
+                ),
+            )
+            return
+        if isinstance(error, MissingRole):
+            await update(
+                interaction,
+                embed=Embed(
+                    title="Command Unauthorized",
+                    description="You are not authorized to run this command.",
+                    color=0xE74C3C,
+                ),
+            )
+            return
+        if isinstance(error, MissingPermissions):
+            await update(
+                interaction,
+                embed=Embed(
+                    title="Command Unauthorized",
+                    description="You are not authorized to run this command.",
+                    color=0xE74C3C,
+                ),
+            )
+            return
 
     @app_commands.command(
         name="start",

@@ -28,17 +28,4 @@ bot.remove_command("help")
 with open("resources/propositions.txt") as p:
     propositions = p.readlines()
 
-bot.state = {
-    "roles_are_setup": False,
-    "channels_are_setup": False,
-    "map_roles": {},
-    "map_channels": {},
-    "debates_enabled": False,
-    "debate_rooms": [],
-    "interface_messages": [],
-    "exiting": False,
-    "debate_feed_fifo": Queue(),
-    "voice_channel_update_task": None,
-    "debate_feed_updater_task": None,
-    "propositions": propositions,
-}
+bot.state["propositions"] = propositions
