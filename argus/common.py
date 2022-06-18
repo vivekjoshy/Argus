@@ -677,6 +677,47 @@ async def consented(bot: ArgusClient, interaction: Interaction) -> bool:
     return True
 
 
+async def in_commands(bot: ArgusClient, interaction: Interaction) -> bool:
+    channel = interaction.channel
+    channels = bot.state["map_channels"]
+
+    if channel == channels["tc_commands"]:
+        return True
+    else:
+        await update(
+            interaction,
+            embed=Embed(
+                title="Incorrect Channel",
+                description="You cannot run this command in this channel.",
+                color=0xE74C3C,
+            ),
+            ephemeral=True,
+        )
+        return False
+
+
+async def in_commands_or_debate(bot: ArgusClient, interaction: Interaction) -> bool:
+    channel = interaction.channel
+    channels = bot.state["map_channels"]
+    room_number = get_room_number(bot, channel)
+
+    if channel == channels["tc_commands"]:
+        return True
+    elif room_number:
+        return True
+    else:
+        await update(
+            interaction,
+            embed=Embed(
+                title="Incorrect Channel",
+                description="You cannot run this command in this channel.",
+                color=0xE74C3C,
+            ),
+            ephemeral=True,
+        )
+        return False
+
+
 async def add_interface_message(bot: ArgusClient, index, embed: Optional[Embed] = None):
     room_num = index + 1
     im_add = await send_embed_message(bot, room_num, embed)

@@ -5,7 +5,6 @@ import argus
 from argus.app import bot, logger, db, engine
 from argus.config import config
 
-
 # Faster Event Loop
 try:
     import uvloop

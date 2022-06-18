@@ -25,6 +25,7 @@ from argus.common import (
     get_debater_room,
     consented,
     add_interface_message,
+    in_commands_or_debate,
 )
 from argus.constants import RANK_RATING_MAP
 from argus.db.models.user import MemberModel
@@ -182,6 +183,9 @@ class Skill(
         player_a: Optional[Member] = None,
         player_b: Optional[Member] = None,
     ) -> None:
+        if not await in_commands_or_debate(self.bot, interaction):
+            return
+
         if player_a.bot or player_b.bot:
             embed = Embed(
                 title=f"Incorrect User Type",
@@ -283,6 +287,9 @@ class Skill(
         self,
         interaction: Interaction,
     ) -> None:
+        if not await in_commands_or_debate(self.bot, interaction):
+            return
+
         skill_cursor = (
             self.bot.db[self.bot.db.database]
             .member.find()
@@ -492,22 +499,24 @@ class Topic(
                 interaction,
                 embed=Embed(
                     title="Command Disabled",
-                    description="This command only works if a debate match is ongoing.",
-                    color=0xE74C3C,
-                ),
-            )
-            return
-
-        if room.match.concluding:
-            await update(
-                interaction,
-                embed=Embed(
-                    title="Command Temporarily Disabled",
-                    description="This command only works once the debate match has finished concluding.",
+                    description="This command only works if a debate room has a current topic.",
                     color=0xE74C3C,
                 ),
                 ephemeral=True,
             )
+            return
+
+        if room.match:
+            if room.match.concluding:
+                await update(
+                    interaction,
+                    embed=Embed(
+                        title="Command Temporarily Disabled",
+                        description="This command only works once the debate match has finished concluding.",
+                        color=0xE74C3C,
+                    ),
+                    ephemeral=True,
+                )
 
         await interaction.response.defer()
 
@@ -613,22 +622,24 @@ class Topic(
                 interaction,
                 embed=Embed(
                     title="Command Disabled",
-                    description="This command only works if a debate match is ongoing.",
-                    color=0xE74C3C,
-                ),
-            )
-            return
-
-        if room.match.concluding:
-            await update(
-                interaction,
-                embed=Embed(
-                    title="Command Temporarily Disabled",
-                    description="This command only works once the debate match has finished concluding.",
+                    description="This command only works if a debate room has a current topic.",
                     color=0xE74C3C,
                 ),
                 ephemeral=True,
             )
+            return
+
+        if room.match:
+            if room.match.concluding:
+                await update(
+                    interaction,
+                    embed=Embed(
+                        title="Command Temporarily Disabled",
+                        description="This command only works once the debate match has finished concluding.",
+                        color=0xE74C3C,
+                    ),
+                    ephemeral=True,
+                )
 
         await interaction.response.defer()
 
@@ -727,22 +738,24 @@ class Debate(commands.Cog):
                 interaction,
                 embed=Embed(
                     title="Command Disabled",
-                    description="This command only works if a debate match is ongoing.",
-                    color=0xE74C3C,
-                ),
-            )
-            return
-
-        if room.match.concluding:
-            await update(
-                interaction,
-                embed=Embed(
-                    title="Command Temporarily Disabled",
-                    description="This command only works once the debate match has finished concluding.",
+                    description="This command only works if a debate room has a current topic.",
                     color=0xE74C3C,
                 ),
                 ephemeral=True,
             )
+            return
+
+        if room.match:
+            if room.match.concluding:
+                await update(
+                    interaction,
+                    embed=Embed(
+                        title="Command Temporarily Disabled",
+                        description="This command only works once the debate match has finished concluding.",
+                        color=0xE74C3C,
+                    ),
+                    ephemeral=True,
+                )
 
         if room.match.check_participant(author):
             participant = room.match.get_participant(author)
@@ -810,22 +823,24 @@ class Debate(commands.Cog):
                 interaction,
                 embed=Embed(
                     title="Command Disabled",
-                    description="This command only works if a debate match is ongoing.",
-                    color=0xE74C3C,
-                ),
-            )
-            return
-
-        if room.match.concluding:
-            await update(
-                interaction,
-                embed=Embed(
-                    title="Command Temporarily Disabled",
-                    description="This command only works once the debate match has finished concluding.",
+                    description="This command only works if a debate room has a current topic.",
                     color=0xE74C3C,
                 ),
                 ephemeral=True,
             )
+            return
+
+        if room.match:
+            if room.match.concluding:
+                await update(
+                    interaction,
+                    embed=Embed(
+                        title="Command Temporarily Disabled",
+                        description="This command only works once the debate match has finished concluding.",
+                        color=0xE74C3C,
+                    ),
+                    ephemeral=True,
+                )
 
         if room.match.check_participant(author):
             participant = room.match.get_participant(author)
@@ -896,22 +911,24 @@ class Debate(commands.Cog):
                 interaction,
                 embed=Embed(
                     title="Command Disabled",
-                    description="This command only works if a debate match is ongoing.",
-                    color=0xE74C3C,
-                ),
-            )
-            return
-
-        if room.match.concluding:
-            await update(
-                interaction,
-                embed=Embed(
-                    title="Command Temporarily Disabled",
-                    description="This command only works once the debate match has finished concluding.",
+                    description="This command only works if a debate room has a current topic.",
                     color=0xE74C3C,
                 ),
                 ephemeral=True,
             )
+            return
+
+        if room.match:
+            if room.match.concluding:
+                await update(
+                    interaction,
+                    embed=Embed(
+                        title="Command Temporarily Disabled",
+                        description="This command only works once the debate match has finished concluding.",
+                        color=0xE74C3C,
+                    ),
+                    ephemeral=True,
+                )
 
         if check_debater_in_any_room(
             bot=self.bot, interaction=interaction, room=room, member=author
@@ -994,22 +1011,24 @@ class Debate(commands.Cog):
                 interaction,
                 embed=Embed(
                     title="Command Disabled",
-                    description="This command only works if a debate match is ongoing.",
-                    color=0xE74C3C,
-                ),
-            )
-            return
-
-        if room.match.concluding:
-            await update(
-                interaction,
-                embed=Embed(
-                    title="Command Temporarily Disabled",
-                    description="This command only works once the debate match has finished concluding.",
+                    description="This command only works if a debate room has a current topic.",
                     color=0xE74C3C,
                 ),
                 ephemeral=True,
             )
+            return
+
+        if room.match:
+            if room.match.concluding:
+                await update(
+                    interaction,
+                    embed=Embed(
+                        title="Command Temporarily Disabled",
+                        description="This command only works once the debate match has finished concluding.",
+                        color=0xE74C3C,
+                    ),
+                    ephemeral=True,
+                )
 
         if candidate == author:
             embed = Embed(
@@ -1229,27 +1248,17 @@ class Debate(commands.Cog):
             )
             return
 
-        if not room.check_match():
-            await update(
-                interaction,
-                embed=Embed(
-                    title="Command Disabled",
-                    description="This command only works if a debate match is ongoing.",
-                    color=0xE74C3C,
-                ),
-            )
-            return
-
-        if room.match.concluding:
-            await update(
-                interaction,
-                embed=Embed(
-                    title="Command Temporarily Disabled",
-                    description="This command only works once the debate match has finished concluding.",
-                    color=0xE74C3C,
-                ),
-                ephemeral=True,
-            )
+        if room.match:
+            if room.match.concluding:
+                await update(
+                    interaction,
+                    embed=Embed(
+                        title="Command Temporarily Disabled",
+                        description="This command only works once the debate match has finished concluding.",
+                        color=0xE74C3C,
+                    ),
+                    ephemeral=True,
+                )
 
         if not room.private:
             embed = Embed(
@@ -1316,22 +1325,24 @@ class Debate(commands.Cog):
                 interaction,
                 embed=Embed(
                     title="Command Disabled",
-                    description="This command only works if a debate match is ongoing.",
-                    color=0xE74C3C,
-                ),
-            )
-            return
-
-        if room.match.concluding:
-            await update(
-                interaction,
-                embed=Embed(
-                    title="Command Temporarily Disabled",
-                    description="This command only works once the debate match has finished concluding.",
+                    description="This command only works if a debate room has a current topic.",
                     color=0xE74C3C,
                 ),
                 ephemeral=True,
             )
+            return
+
+        if room.match:
+            if room.match.concluding:
+                await update(
+                    interaction,
+                    embed=Embed(
+                        title="Command Temporarily Disabled",
+                        description="This command only works once the debate match has finished concluding.",
+                        color=0xE74C3C,
+                    ),
+                    ephemeral=True,
+                )
 
         debaters, concluded, voters = room.vote_conclude(voter=interaction.user)
         if concluded is None:
@@ -1540,27 +1551,17 @@ class Debate(commands.Cog):
             )
             return
 
-        if not room.check_match():
-            await update(
-                interaction,
-                embed=Embed(
-                    title="Command Disabled",
-                    description="This command only works if a debate match is ongoing.",
-                    color=0xE74C3C,
-                ),
-            )
-            return
-
-        if room.match.concluding:
-            await update(
-                interaction,
-                embed=Embed(
-                    title="Command Temporarily Disabled",
-                    description="This command only works once the debate match has finished concluding.",
-                    color=0xE74C3C,
-                ),
-                ephemeral=True,
-            )
+        if room.match:
+            if room.match.concluding:
+                await update(
+                    interaction,
+                    embed=Embed(
+                        title="Command Temporarily Disabled",
+                        description="This command only works once the debate match has finished concluding.",
+                        color=0xE74C3C,
+                    ),
+                    ephemeral=True,
+                )
 
         if room.studio:
             room.studio_participants.append(author)
