@@ -100,3 +100,5 @@ class ArgusClient(commands.Bot):
                 ephemeral=True,
             )
             return
+
+        self.logger.exception(f"{error}", exc_info=error)

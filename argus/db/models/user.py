@@ -12,10 +12,12 @@ class MemberModel(Model):
     mu: float = Field(default=25)
     sigma: float = Field(default=25 / 3)
     rating: float = Field(default=float(20 * ((25 - 3 * 25 / 3) + 25)))
+    debate_count: int = Field(default=0)
+    vote_count: int = Field(default=0)
     factual: int = Field(default=0)
     consistent: int = Field(default=0)
     charitable: int = Field(default=0)
-    sportsmanship: int = Field(default=0)
+    respectful: int = Field(default=0)
 
     # Schema
     class Config:
@@ -29,10 +31,12 @@ class MemberModel(Model):
                     "mu": 25,
                     "sigma": 25 / 3,
                     "rating": 500,
+                    "debate_count": 0,
+                    "vote_count": 0,
                     "factual": 0,
                     "consistent": 0,
                     "charitable": 0,
-                    "sportsmanship": 0,
+                    "respectful": 0,
                 }
             ]
         }

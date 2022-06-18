@@ -20,7 +20,7 @@ bot.engine = engine
 
 def main():
     try:
-        bot.run(config["bot"]["token"])
+        bot.run(config["bot"]["token"], log_handler=None)
     except (KeyboardInterrupt, SystemExit, RuntimeError):
         logger.info(f"Shutting Down Argus")
     finally:

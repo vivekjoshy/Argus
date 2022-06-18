@@ -1,4 +1,5 @@
 import asyncio
+import io
 import math
 import random
 import typing
@@ -7,6 +8,8 @@ from queue import Queue
 from typing import Optional
 
 import discord
+import matplotlib.pyplot as plt
+import numpy as np
 import openskill
 import pymongo
 from discord import app_commands, Member, Interaction, Embed, Role
@@ -35,6 +38,7 @@ from argus.common import (
 )
 from argus.constants import RANK_RATING_MAP
 from argus.db.models.user import MemberModel
+from argus.modals import DebateVotingRubric
 from argus.models import DebateRoom, DebateTopic, DebateParticipant
 from argus.utils import update, floor_rating
 
@@ -95,10 +99,30 @@ class Skill(
                 sigma = packed_data["sigma"]
                 rating = packed_data["rating"]
                 current_rank_role = packed_data["current_rank_role"]
-                rank = interaction.guild.get_role(current_rank_role)
+                rank = current_rank_role
+
+                member_data = await self.bot.engine.find_one(
+                    MemberModel, MemberModel.member == interaction.user.id
+                )
+                y = {
+                    "Factual": member_data.factual,
+                    "Consistent": member_data.consistent,
+                    "Charitable": member_data.charitable,
+                    "Respectful": member_data.respectful,
+                }
+                plt.style.use("ggplot")
+                fig, ax = plt.subplots()
+                ax.barh(list(y.keys()), list(y.values()))
+                plt.xticks(np.arange(min(y.values()), member_data.vote_counts + 1))
+                plt.tight_layout()
+                buffer = io.BytesIO()
+                plt.savefig(buffer, format="png")
+                buffer.seek(0)
+                file = discord.File(fp=buffer, filename="graph.png")
 
                 embed = Embed(title="Skill Rating", color=0xEC6A5C)
                 embed.set_footer(text=member.display_name, icon_url=member.avatar.url)
+                embed.set_image(url="attachment://graph.png")
                 embed.add_field(
                     name="Mean",
                     value=f"```{mu: .2f}```",
@@ -120,7 +144,7 @@ class Skill(
                     inline=True,
                 )
                 embed.add_field(name="Title", value=f"{rank.mention}", inline=True)
-                await update(interaction, embed=embed, ephemeral=True)
+                await update(interaction, file=file, embed=embed, ephemeral=True)
         else:
             packed_data = await insert_skill(self.bot, interaction, interaction.user)
             pipeline = [
@@ -133,7 +157,7 @@ class Skill(
             ]
 
             member_found = None
-            member_doc = self.bot.db[self.bot.db.database].MemberModel.aggregate(
+            member_doc = self.bot.db[self.bot.db.database].member.aggregate(
                 pipeline=pipeline
             )
             async for member_found in member_doc:
@@ -152,12 +176,35 @@ class Skill(
             sigma = packed_data["sigma"]
             rating = packed_data["rating"]
             current_rank_role = packed_data["current_rank_role"]
-            rank = interaction.guild.get_role(current_rank_role)
+            rank = current_rank_role
+
+            member_data = await self.bot.engine.find_one(
+                MemberModel, MemberModel.member == interaction.user.id
+            )
+            y = {
+                "Factual": member_data.factual,
+                "Consistent": member_data.consistent,
+                "Charitable": member_data.charitable,
+                "Respectful": member_data.respectful,
+            }
+            plt.style.use("ggplot")
+            fig, ax = plt.subplots()
+            ax.barh(list(y.keys()), list(y.values()))
+            plt.xticks(np.arange(min(y.values()), member_data.vote_count + 1))
+            plt.tight_layout()
+            buffer = io.BytesIO()
+            plt.savefig(
+                buffer,
+                format="png",
+            )
+            buffer.seek(0)
+            file = discord.File(fp=buffer, filename="graph.png")
 
             embed = Embed(title="Skill Rating", color=0xEC6A5C)
             embed.set_footer(
                 text=interaction.user.display_name, icon_url=interaction.user.avatar.url
             )
+            embed.set_image(url="attachment://graph.png")
             embed.add_field(
                 name="Mean",
                 value=f"```{mu: .2f}```",
@@ -177,7 +224,7 @@ class Skill(
                 name="Rank", value=f"```{str(member_found['rank'] + 1)}```", inline=True
             )
             embed.add_field(name="Title", value=f"{rank.mention}", inline=True)
-            await update(interaction, embed=embed, ephemeral=True)
+            await update(interaction, file=file, embed=embed, ephemeral=True)
 
     @app_commands.command(
         name="compare",
@@ -1044,6 +1091,12 @@ class Debate(commands.Cog):
 
         await author.edit(mute=False)
 
+        debater_data = await self.bot.engine.find_one(
+            MemberModel, MemberModel.member == interaction.user.id
+        )
+        debater_data.debate_count += 1
+        await self.bot.engine.save(debater_data)
+
         embed = Embed(
             title="You are now a debater on the topic.",
             description="Your skill rating is at risk. Be mindful of what you say.",
@@ -1131,28 +1184,15 @@ class Debate(commands.Cog):
             await update(interaction, embed=embed, ephemeral=True)
             return
 
-        result = room.match.vote(voter=author, candidate=candidate)
-        if result is None:
-            embed = Embed(
-                title="Stance Not Set",
-                description="You must set a stance for or against the topic.",
-                color=0xE74C3C,
+        await interaction.response.send_modal(
+            DebateVotingRubric(
+                states={
+                    "room": room,
+                    "author": author,
+                    "candidate": candidate,
+                }
             )
-            await update(interaction, embed=embed, ephemeral=True)
-            return
-        elif not result:
-            embed = Embed(
-                title="Invalid Candidate",
-                description="You can only vote for debaters.",
-                color=0xE74C3C,
-            )
-            await update(interaction, embed=embed, ephemeral=True)
-            return
-
-        embed = Embed(
-            title="Vote Cast", description="Your vote has been cast", color=0x2ECC71
         )
-        await update(interaction, embed=embed, ephemeral=True)
 
     @app_commands.command(
         name="private", description="Convert a public debate into a private one."
