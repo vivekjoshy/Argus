@@ -41,6 +41,7 @@ DB_CHANNEL_NAME_MAP = {
     "Interface": "category_interface",
     "election-feed": "tc_election_feed",
     "debate-feed": "tc_debate_feed",
+    "motions": "tc_motions",
     "commands": "tc_commands",
     "Events": "category_events",
     "Community": "category_community",
@@ -167,5 +168,6 @@ PLUGINS = [
     "plugins.global",
     "plugins.layout",
     "plugins.meta",
+    "plugins.parliament",
     "plugins.security",
 ]

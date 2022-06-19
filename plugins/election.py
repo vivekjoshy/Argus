@@ -542,6 +542,7 @@ class Citizenship(GroupCog, name="citizenship"):
         description="Grant citizenship to a Member.",
     )
     @app_commands.checks.has_any_role("The Crown", "Chancellor", "Judge")
+    @app_commands.checks.cooldown(rate=1, per=600)
     async def grant(self, interaction: Interaction, member: Member) -> None:
         if "Member" not in [role.name for role in member.roles]:
             await update(
@@ -594,6 +595,40 @@ class Citizenship(GroupCog, name="citizenship"):
             ephemeral=True,
         )
 
+    @app_commands.command(
+        name="revoke",
+        description="Demote a Citizen to Member.",
+    )
+    @app_commands.checks.has_any_role("The Crown", "Chancellor", "Liege", "Judge")
+    @app_commands.checks.cooldown(rate=1, per=86400)
+    async def revoke(self, interaction: Interaction, member: Member) -> None:
+        if "Citizen" not in [role.name for role in member.roles]:
+            await update(
+                interaction,
+                embed=Embed(
+                    title="Unauthorized",
+                    description="You can only demote Citizens.",
+                    color=0xE74C3C,
+                ),
+                ephemeral=True,
+            )
+            return
+
+        citizen = discord.utils.get(interaction.guild.roles, name="Citizen")
+        member_role = discord.utils.get(interaction.guild.roles, name="Member")
+        await member.add_roles(member_role)
+        await member.remove_roles(citizen)
+
+        await update(
+            interaction,
+            embed=Embed(
+                title="Citizenship Revoked",
+                description=f"{member.mention} is now a Member.",
+                color=0x2ECC71,
+            ),
+            ephemeral=True,
+        )
+
 
 class Membership(GroupCog, name="membership"):
     def __init__(self, bot: ArgusClient) -> None:
@@ -626,6 +661,37 @@ class Membership(GroupCog, name="membership"):
             embed=Embed(
                 title="Citizenship Granted",
                 description=f"{member.mention} is now a Member.",
+                color=0x2ECC71,
+            ),
+            ephemeral=True,
+        )
+
+    @app_commands.command(
+        name="revoke",
+        description="Demote a Citizen to Member.",
+    )
+    @app_commands.checks.has_any_role("The Crown", "Chancellor", "Liege")
+    async def revoke(self, interaction: Interaction, member: Member) -> None:
+        if "Member" not in [role.name for role in member.roles]:
+            await update(
+                interaction,
+                embed=Embed(
+                    title="Unauthorized",
+                    description="You can only demote Members.",
+                    color=0xE74C3C,
+                ),
+                ephemeral=True,
+            )
+            return
+
+        member_role = discord.utils.get(interaction.guild.roles, name="Member")
+        await member.remove_roles(member_role)
+
+        await update(
+            interaction,
+            embed=Embed(
+                title="Membership Revoked",
+                description=f"{member.mention} is no longer a Member.",
                 color=0x2ECC71,
             ),
             ephemeral=True,

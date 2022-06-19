@@ -1,3 +1,6 @@
+import uuid
+
+import discord
 from discord import ui, Interaction, Embed
 
 from argus.db.models.user import MemberModel
@@ -70,5 +73,50 @@ class DebateVotingRubric(CustomModal, title="Voter Rubric"):
 
         embed = Embed(
             title="Vote Cast", description="Your vote has been cast", color=0x2ECC71
+        )
+        await update(interaction, embed=embed, ephemeral=True)
+
+
+class MotionProposal(CustomModal, title="Motion Proposal"):
+    motion_title = ui.TextInput(
+        label="Title", required=True, min_length=5, max_length=256
+    )
+    body = ui.TextInput(
+        label="Body",
+        placeholder="Discord Markdown is Supported",
+        style=discord.TextStyle.paragraph,
+        required=True,
+        min_length=10,
+        max_length=1024,
+    )
+
+    async def on_submit(self, interaction: Interaction):
+        if self.states.hl_enabled:
+            self.states.hl_id = uuid.uuid4().hex.upper()
+            embed = Embed(
+                title=f"Motion Proposed - {self.states.hl_id}",
+                description="**Drafted in the House of Lords**",
+            )
+            embed.add_field(name=f"{self.motion_title}", value=f"{self.body}")
+            self.states.hl_motion["embed"] = embed
+            self.states.hl_last_embed = embed
+            await self.states.motions.send(embeds=[embed])
+            self.states.hl_enabled = False
+        elif self.states.hc_enabled:
+            self.states.hc_id = uuid.uuid4().hex.upper()
+            embed = Embed(
+                title=f"Motion Proposed - {self.states.hc_id}",
+                description="**Drafted in the House of Commons**",
+            )
+            embed.add_field(name=f"{self.motion_title}", value=f"{self.body}")
+            self.states.hc_motion["embed"] = embed
+            self.states.hc_last_embed = embed
+            await self.states.motions.send(embeds=[embed])
+            self.states.hc_enabled = False
+
+        embed = Embed(
+            title="Motion Proposed",
+            description="Your motion has been sent for deliberation.",
+            color=0x2ECC71,
         )
         await update(interaction, embed=embed, ephemeral=True)

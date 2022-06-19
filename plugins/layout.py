@@ -70,6 +70,7 @@ class Setup(commands.GroupCog, name="setup"):
             "category_interface": None,
             "tc_election_feed": None,
             "tc_debate_feed": None,
+            "tc_motions": None,
             "tc_commands": None,
             "category_events": None,
             "category_community": None,
@@ -488,6 +489,14 @@ class Setup(commands.GroupCog, name="setup"):
 
         channels["tc_debate_feed"] = await guild.create_text_channel(
             name="debate-feed",
+            category=channels["category_interface"],
+            overwrites=generate_overwrites(
+                interaction, roles=roles, channel="interface"
+            ),
+        )
+
+        channels["tc_motions"] = await guild.create_text_channel(
+            name="motions",
             category=channels["category_interface"],
             overwrites=generate_overwrites(
                 interaction, roles=roles, channel="interface"

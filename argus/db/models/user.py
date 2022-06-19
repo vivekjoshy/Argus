@@ -7,8 +7,6 @@ class MemberModel(Model):
     member: DiscordMember = Field()
     is_member: bool = Field(default=False)
     is_citizen: bool = Field(default=False)
-    citizenship_revoked: bool = Field(default=False)
-    membership_revoked: bool = Field(default=False)
     mu: float = Field(default=25)
     sigma: float = Field(default=25 / 3)
     rating: float = Field(default=float(20 * ((25 - 3 * 25 / 3) + 25)))

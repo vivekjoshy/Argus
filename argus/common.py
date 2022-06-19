@@ -131,8 +131,6 @@ async def insert_skill(
     """
     Initializes member's skill if it doesn't already in database. Also updates their roles.
     """
-    role_member = discord.utils.get(interaction.guild.roles, name="Member")
-    role_citizen = discord.utils.get(interaction.guild.roles, name="Citizen")
     member_data: Optional[MemberModel] = await bot.engine.find_one(
         MemberModel, MemberModel.member == member.id
     )
@@ -141,31 +139,6 @@ async def insert_skill(
             mu = 25.0
             sigma = 25 / 3
             rating = float(20 * ((mu - 3 * sigma) + 25))
-
-            if (
-                member_data.citizenship_revoked is None
-                or member_data.citizenship_revoked is False
-            ):
-                member_data.citizenship_revoked = False
-            else:
-                member_data.citizenship_revoked = True
-
-            if (
-                member_data.membership_revoked is None
-                or member_data.membership_revoked is False
-            ):
-                member_data.membership_revoked = False
-            else:
-                member_data.membership_revoked = True
-
-            if member_data.citizenship_revoked:
-                await member.remove_roles(
-                    role_citizen, reason="Citizenship status repaired."
-                )
-            if member_data.membership_revoked:
-                await member.remove_roles(
-                    role_member, reason="Membership status repaired."
-                )
 
             member_data.mu = mu
             member_data.sigma = sigma
