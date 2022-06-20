@@ -7,9 +7,11 @@ from discord.app_commands import (
     MissingAnyRole,
     MissingRole,
     MissingPermissions,
+    CommandOnCooldown,
 )
 from discord.ext import commands
 
+from argus.common import TimeDelta
 from argus.constants import BOT_DESCRIPTION, PLUGINS
 from argus.utils import update
 
@@ -95,6 +97,19 @@ class ArgusClient(commands.Bot):
                 embed=Embed(
                     title="Command Unauthorized",
                     description="You are not authorized to run this command.",
+                    color=0xE74C3C,
+                ),
+                ephemeral=True,
+            )
+            return
+
+        if isinstance(error, CommandOnCooldown):
+            time_left = TimeDelta(seconds=error.retry_after)
+            await update(
+                interaction,
+                embed=Embed(
+                    title="Command On Cooldoww",
+                    description=f"You are not authorized to run this command for another {time_left}.",
                     color=0xE74C3C,
                 ),
                 ephemeral=True,

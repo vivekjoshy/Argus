@@ -559,8 +559,8 @@ class Topic(
         name="vote",
         description="Vote for who's topic you want to be debated.",
     )
-    async def vote(self, interaction: Interaction, debater: Member) -> None:
-        if debater.bot:
+    async def vote(self, interaction: Interaction, member: Member) -> None:
+        if member.bot:
             embed = Embed(
                 title="Invalid User",
                 description="You cannot vote for bots.",
@@ -578,7 +578,7 @@ class Topic(
         channel = interaction.channel
         room_number = get_room_number(self.bot, channel)
         room: typing.Optional[DebateRoom] = get_room(self.bot, room_number)
-        candidate = debater
+        candidate = member
 
         if not room.check_match():
             await update(

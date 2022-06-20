@@ -1,5 +1,3 @@
-from queue import Queue
-
 import sentry_sdk
 import structlog_sentry_logger
 from odmantic import AIOEngine
