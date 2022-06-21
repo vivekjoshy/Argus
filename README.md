@@ -1,7 +1,8 @@
 <div style="text-align: center;">
-<p>Debate the way it's meant to be.</p>
 <img src="resources/images/Argus Badge.png" alt="drawing" style="width:100%;"/>
 </div>
+
+<br>
 
 Setting up this bot is easy. All you have to do is create a `config.toml` in the root directory like this:
 
