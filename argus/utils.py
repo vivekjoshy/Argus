@@ -39,3 +39,15 @@ def floor_rating(rating_input: float) -> float:
         return rating_counter
     else:
         return 0
+
+
+def normalize(d: dict, target=1.0):
+    """
+    Normalize a dictionary's values to the target value.
+    """
+    raw = sum(d.values())
+    if raw == 0:
+        factor = target / 1
+    else:
+        factor = target / raw
+    return {key: value * factor for key, value in d.items()}

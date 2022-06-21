@@ -20,6 +20,7 @@ from discord.app_commands import (
     AppCommandError,
 )
 from discord.ext import commands
+from matplotlib import ticker
 
 from argus.client import ArgusClient
 from argus.common import (
@@ -40,7 +41,7 @@ from argus.constants import RANK_RATING_MAP
 from argus.db.models.user import MemberModel
 from argus.modals import DebateVotingRubric
 from argus.models import DebateRoom, DebateTopic, DebateParticipant
-from argus.utils import update, floor_rating
+from argus.utils import update, floor_rating, normalize
 
 
 @app_commands.default_permissions(send_messages=True)
@@ -60,6 +61,7 @@ class Skill(
     async def view(
         self, interaction: Interaction, member: Optional[Member] = None
     ) -> None:
+        command = discord.utils.get(interaction.guild.channels, name="commands")
         if member:
             if member.bot:
                 embed = Embed(
@@ -102,7 +104,7 @@ class Skill(
                 rank = current_rank_role
 
                 member_data = await self.bot.engine.find_one(
-                    MemberModel, MemberModel.member == interaction.user.id
+                    MemberModel, MemberModel.member == member.id
                 )
                 y = {
                     "Factual": member_data.factual,
@@ -110,11 +112,12 @@ class Skill(
                     "Charitable": member_data.charitable,
                     "Respectful": member_data.respectful,
                 }
+                y = normalize(y)
                 plt.style.use("ggplot")
                 fig, ax = plt.subplots()
                 ax.barh(list(y.keys()), list(y.values()))
-                plt.xticks(np.arange(min(y.values()), member_data.vote_counts + 1))
                 plt.tight_layout()
+                ax.xaxis.set_major_formatter(ticker.PercentFormatter(xmax=1))
                 buffer = io.BytesIO()
                 plt.savefig(buffer, format="png")
                 buffer.seek(0)
@@ -143,8 +146,16 @@ class Skill(
                     value=f"```{str(member_found['rank'] + 1)}```",
                     inline=True,
                 )
-                embed.add_field(name="Title", value=f"{rank.mention}", inline=True)
-                await update(interaction, file=file, embed=embed, ephemeral=True)
+                embed.add_field(name="Title", value=f"```{rank.name}```", inline=True)
+                embed.add_field(
+                    name="Vote Count",
+                    value=f"```{member_data.vote_count}```",
+                    inline=True,
+                )
+                if interaction.channel == command:
+                    await update(interaction, file=file, embed=embed)
+                else:
+                    await update(interaction, file=file, embed=embed, ephemeral=True)
         else:
             packed_data = await insert_skill(self.bot, interaction, interaction.user)
             pipeline = [
@@ -187,11 +198,12 @@ class Skill(
                 "Charitable": member_data.charitable,
                 "Respectful": member_data.respectful,
             }
+            y = normalize(y)
             plt.style.use("ggplot")
             fig, ax = plt.subplots()
             ax.barh(list(y.keys()), list(y.values()))
-            plt.xticks(np.arange(min(y.values()), member_data.vote_count + 1))
             plt.tight_layout()
+            ax.xaxis.set_major_formatter(ticker.PercentFormatter(xmax=1))
             buffer = io.BytesIO()
             plt.savefig(
                 buffer,
@@ -223,8 +235,14 @@ class Skill(
             embed.add_field(
                 name="Rank", value=f"```{str(member_found['rank'] + 1)}```", inline=True
             )
-            embed.add_field(name="Title", value=f"{rank.mention}", inline=True)
-            await update(interaction, file=file, embed=embed, ephemeral=True)
+            embed.add_field(name="Title", value=f"```{rank.name}```", inline=True)
+            embed.add_field(
+                name="Vote Count", value=f"```{member_data.vote_count}```", inline=True
+            )
+            if interaction.channel == command:
+                await update(interaction, file=file, embed=embed)
+            else:
+                await update(interaction, file=file, embed=embed, ephemeral=True)
 
     @app_commands.command(
         name="compare",

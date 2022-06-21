@@ -11,7 +11,7 @@ from discord.app_commands import (
 )
 from discord.ext import commands
 
-from argus.common import TimeDelta
+from argus.formatter import TimeDelta
 from argus.constants import BOT_DESCRIPTION, PLUGINS
 from argus.utils import update
 
@@ -108,7 +108,7 @@ class ArgusClient(commands.Bot):
             await update(
                 interaction,
                 embed=Embed(
-                    title="Command On Cooldoww",
+                    title="Command On Cooldown",
                     description=f"You are not authorized to run this command for another {time_left}.",
                     color=0xE74C3C,
                 ),

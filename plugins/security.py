@@ -12,7 +12,6 @@ from argus.common import send_embed_message
 from argus.constants import ROLE_PERMISSIONS
 from argus.db.models.guild import GuildModel
 from argus.models import DebateRoom
-from argus.overwrites import generate_overwrites
 from argus.tasks import debate_feed_updater
 from argus.utils import update
 from argus.voice import voice_channel_update
