@@ -735,16 +735,16 @@ class Setup(commands.GroupCog, name="setup"):
         roles = self.bot.state["map_roles"]
 
         # Add Role Icons
-        await roles["role_grandmaster"].edit(unicode_emoji="👑")
-        await roles["role_legend"].edit(unicode_emoji="🏆")
-        await roles["role_master"].edit(unicode_emoji="⚖️")
-        await roles["role_expert"].edit(unicode_emoji="⚔️")
-        await roles["role_distinguished"].edit(unicode_emoji="💥")
-        await roles["role_apprentice"].edit(unicode_emoji="💡")
-        await roles["role_novice"].edit(unicode_emoji="🔥")
-        await roles["role_initiate"].edit(unicode_emoji="🔰")
-        await roles["role_rookie"].edit(unicode_emoji="🧷")
-        await roles["role_incompetent"].edit(unicode_emoji="💯")
+        await roles["role_grandmaster"].edit(display_icon="👑")
+        await roles["role_legend"].edit(display_icon="🏆")
+        await roles["role_master"].edit(display_icon="⚖️")
+        await roles["role_expert"].edit(display_icon="⚔️")
+        await roles["role_distinguished"].edit(display_icon="💥")
+        await roles["role_apprentice"].edit(display_icon="💡")
+        await roles["role_novice"].edit(display_icon="🔥")
+        await roles["role_initiate"].edit(display_icon="🔰")
+        await roles["role_rookie"].edit(display_icon="🧷")
+        await roles["role_incompetent"].edit(display_icon="💯")
 
         # Send Confirmation Message
         await update(
