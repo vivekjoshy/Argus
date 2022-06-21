@@ -732,7 +732,11 @@ class Setup(commands.GroupCog, name="setup"):
                 ephemeral=True,
             )
 
-        roles = self.bot.state["map_roles"]
+        # Prime Local Cache
+        roles = {}
+        for role in interaction.guild.roles:
+            if not role.managed:
+                roles[DB_ROLE_NAME_MAP[role.name]] = role
 
         # Add Role Icons
         await roles["role_grandmaster"].edit(display_icon="👑")
