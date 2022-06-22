@@ -104,7 +104,7 @@ class ArgusClient(commands.Bot):
             return
 
         if isinstance(error, CommandOnCooldown):
-            time_left = TimeDelta(seconds=error.retry_after)
+            time_left = TimeDelta(seconds=round(error.retry_after))
             await update(
                 interaction,
                 embed=Embed(
