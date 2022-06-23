@@ -749,6 +749,7 @@ class Topic(
                     ),
                     ephemeral=True,
                 )
+                return
 
         await interaction.response.defer()
 
