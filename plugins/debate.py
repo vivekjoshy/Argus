@@ -123,8 +123,11 @@ class Skill(
                 buffer.seek(0)
                 file = discord.File(fp=buffer, filename="graph.png")
 
+                avatar_url = None
+                if member.avatar:
+                    avatar_url = member.avatar.url
                 embed = Embed(title="Skill Rating", color=0xEC6A5C)
-                embed.set_footer(text=member.display_name, icon_url=member.avatar.url)
+                embed.set_footer(text=member.display_name, icon_url=avatar_url)
                 embed.set_image(url="attachment://graph.png")
                 embed.add_field(
                     name="Mean",
@@ -212,10 +215,11 @@ class Skill(
             buffer.seek(0)
             file = discord.File(fp=buffer, filename="graph.png")
 
+            avatar_url = None
+            if interaction.user.avatar:
+                avatar_url = interaction.user.avatar.url
             embed = Embed(title="Skill Rating", color=0xEC6A5C)
-            embed.set_footer(
-                text=interaction.user.display_name, icon_url=interaction.user.avatar.url
-            )
+            embed.set_footer(text=interaction.user.display_name, icon_url=avatar_url)
             embed.set_image(url="attachment://graph.png")
             embed.add_field(
                 name="Mean",
@@ -688,10 +692,11 @@ class Topic(
                     embed.add_field(name="Topic [Prioritized]", value=f"{str(topic)}")
                 else:
                     embed.add_field(name="Topic", value=f"{str(topic)}")
+                avatar_url = None
+                if member.avatar:
+                    avatar_url = member.avatar.url
                 embed.add_field(name="Votes", value=f"{str(topic.votes)}")
-                embed.set_footer(
-                    text=f"{member.display_name}", icon_url=member.avatar.url
-                )
+                embed.set_footer(text=f"{member.display_name}", icon_url=avatar_url)
                 await update(interaction, embed=embed, ephemeral=True)
                 return
 
@@ -1420,9 +1425,10 @@ class Debate(commands.Cog):
                 description=f"{participant.mention} is now allowed to debate in the room.",
                 color=0x2ECC71,
             )
-            embed.set_author(
-                name=f"{unlocked_member.username}", icon_url=unlocked_member.avatar.url
-            )
+            avatar_url = None
+            if unlocked_member.avatar:
+                avatar_url = unlocked_member.avatar.url
+            embed.set_author(name=f"{unlocked_member.username}", icon_url=avatar_url)
             await update(interaction, embed=embed)
 
     @app_commands.command(
@@ -1528,10 +1534,13 @@ class Debate(commands.Cog):
 
                         await self.bot.engine.save(debater_data)
 
+                        avatar_url = None
+                        if debater.member.avatar:
+                            avatar_url = debater.member.avatar.url
                         embed = Embed(title="Rating Change", color=0xEC6A5C)
                         embed.set_footer(
                             text=debater.member.display_name,
-                            icon_url=debater.member.avatar.url,
+                            icon_url=avatar_url,
                         )
                         embed.add_field(
                             name="Mean",
