@@ -16,6 +16,7 @@ token = "OaA2MfMzMsgzMTg3MDA5YRE2.trjisg.sI0ds5dX3abh5acbqkLJUQOjseo"
 debug = false
 log_type = "Timed"
 log_level = "INFO"
+sentry = "https://5636365a78d3344a9b0445536b792440447a@o141345.ingest.sentry.io/4747464"
 
 
 [database]
@@ -32,6 +33,13 @@ guild_id = 729148350156134416
 
 
 ```
+
+Then add an .env file with these contents:
+```dotenv
+STRUCTLOG_SENTRY_LOGGER_LOCAL_DEVELOPMENT_LOGGING_MODE_ON=
+STRUCTLOG_SENTRY_LOGGER_CLOUD_SENTRY_INTEGRATION_MODE_ON=
+```
+
 
 Once this is done you can easily start this bot by installing the project locally using `pip`.
 

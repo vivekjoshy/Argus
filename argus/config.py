@@ -7,8 +7,6 @@ config_schema = Schema(
     {
         "bot": {
             "token": str,
-            "client_id": int,
-            "client_secret": str,
             "debug": Or(True, False),
             "log_level": Or(
                 "DEBUG",
