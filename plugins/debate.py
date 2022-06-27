@@ -1948,6 +1948,9 @@ class Debate(commands.Cog):
         await room.vc.send(embeds=[embed])
         await asyncio.sleep(120)
 
+        if room.studio_engineer in self.bot.state["studio_engineers"]:
+            self.bot.state["studio_engineers"].remove(room.studio_engineer)
+
         room.studio = False
         room.studio_engineer = None
         await update_im(bot=self.bot, room_num=room.number)
@@ -1962,6 +1965,8 @@ class Debate(commands.Cog):
         await room.vc.send(embeds=[embed])
         await asyncio.sleep(300)
 
+        if room.lounge_master in self.bot.state["lounge_masters"]:
+            self.bot.state["lounge_masters"].remove(room.lounge_master)
         room.lounge = False
         room.lounge_master = None
         await update_im(bot=self.bot, room_num=room.number)
@@ -2371,8 +2376,18 @@ class Studio(
             await update(interaction, embed=embed, ephemeral=True)
             return
         else:
+            if room.studio_engineer in self.bot.state["studio_engineers"]:
+                embed = Embed(
+                    title="Command Unauthorized",
+                    description=f"You can only claim one studio room at a time.",
+                    color=0xE74C3C,
+                )
+                await update(interaction, embed=embed, ephemeral=True)
+                return
+
             room.studio = True
             room.studio_engineer = author
+            self.bot.state["studio_engineers"].append(author)
 
             await interaction.response.defer()
 
@@ -2521,8 +2536,18 @@ class Lounge(
             await update(interaction, embed=embed, ephemeral=True)
             return
         else:
+            if author in self.bot.state["lounge_masters"]:
+                embed = Embed(
+                    title="Command Unauthorized",
+                    description=f"You can only claim one lounge room at a time.",
+                    color=0xE74C3C,
+                )
+                await update(interaction, embed=embed, ephemeral=True)
+                return
+
             room.lounge = True
             room.lounge_master = author
+            self.bot.state["lounge_masters"].append(author)
 
             await interaction.response.defer()
 

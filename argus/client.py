@@ -43,6 +43,8 @@ class ArgusClient(commands.Bot):
             "voice_channel_update_task": None,
             "debate_feed_updater_task": None,
             "propositions": [],
+            "studio_engineers": [],
+            "lounge_masters": [],
         }
 
         super().__init__(
