@@ -48,8 +48,10 @@ class Setup(commands.GroupCog, name="setup"):
             "role_incompetent": None,
             "role_bot": None,
             "role_judge": None,
+            "role_server_booster": None,
             "role_citizen": None,
             "role_member": None,
+            "role_promoter": None,
             "role_events": None,
             "role_logs": None,
             "role_debate_ping": None,
@@ -274,6 +276,10 @@ class Setup(commands.GroupCog, name="setup"):
         await interaction.guild.me.add_roles(roles["role_bot"])
 
         # Membership Roles
+        if interaction.guild.premium_subscriber_role:
+            roles["role_server_booster"] = interaction.guild.premium_subscriber_role
+            await interaction.guild.premium_subscriber_role.edit()
+
         roles["role_judge"] = await interaction.guild.create_role(
             name="Judge",
             permissions=Permissions(permissions=ROLE_PERMISSIONS["role_judge"]),
@@ -291,6 +297,12 @@ class Setup(commands.GroupCog, name="setup"):
         roles["role_member"] = await interaction.guild.create_role(
             name="Member",
             permissions=Permissions(permissions=ROLE_PERMISSIONS["role_member"]),
+            hoist=False,
+        )
+
+        roles["role_promoter"] = await interaction.guild.create_role(
+            name="Promoter",
+            permissions=Permissions(permissions=ROLE_PERMISSIONS["role_promoter"]),
             hoist=False,
         )
 
@@ -529,14 +541,12 @@ class Setup(commands.GroupCog, name="setup"):
         channels["tc_general"] = await guild.create_text_channel(
             name="general",
             category=channels["category_community"],
-            slowmode_delay=5,
             overwrites=generate_overwrites(interaction, roles=roles, channel="general"),
         )
 
         channels["tc_memes"] = await guild.create_text_channel(
             name="memes",
             category=channels["category_community"],
-            slowmode_delay=5,
             overwrites=generate_overwrites(
                 interaction, roles=roles, channel="community"
             ),
@@ -948,7 +958,11 @@ class Migrate(commands.GroupCog, name="migrate"):
                     for _channel in _channels:
                         channel_id = channels[DB_CHANNEL_NAME_MAP[_channel.name]]
                         if _channel.id != channel_id:
-                            await _channel.delete()
+                            if _channel not in [
+                                guild.rules_channel,
+                                guild.public_updates_channel,
+                            ]:
+                                await _channel.delete()
 
         for _channel in guild.channels:
             if _channel.name not in DB_CHANNEL_NAME_MAP.keys():
@@ -964,9 +978,7 @@ class Migrate(commands.GroupCog, name="migrate"):
                         overwrites=generate_overwrites(
                             interaction,
                             roles=roles,
-                            channel=DB_CHANNEL_NAME_MAP[channel_name].lstrip(
-                                "category"
-                            )[1:],
+                            channel=DB_CHANNEL_NAME_MAP[channel_name],
                         ),
                     )
                 elif DB_CHANNEL_NAME_MAP[channel_name].startswith("tc"):
@@ -976,9 +988,7 @@ class Migrate(commands.GroupCog, name="migrate"):
                             overwrites=generate_overwrites(
                                 interaction,
                                 roles=roles,
-                                channel=DB_CHANNEL_NAME_MAP[channel_name].lstrip("tc")[
-                                    1:
-                                ],
+                                channel=DB_CHANNEL_NAME_MAP[channel_name],
                             ),
                             news=True,
                         )
@@ -988,9 +998,7 @@ class Migrate(commands.GroupCog, name="migrate"):
                             overwrites=generate_overwrites(
                                 interaction,
                                 roles=roles,
-                                channel=DB_CHANNEL_NAME_MAP[channel_name].lstrip("tc")[
-                                    1:
-                                ],
+                                channel=DB_CHANNEL_NAME_MAP[channel_name],
                             ),
                         )
                 elif DB_CHANNEL_NAME_MAP[channel_name].startswith("vc"):
@@ -1009,6 +1017,7 @@ class Migrate(commands.GroupCog, name="migrate"):
                                     roles["role_judge"]: NEGATIVE,
                                     roles["role_citizen"]: NEGATIVE,
                                     roles["role_member"]: NEGATIVE,
+                                    roles["role_promoter"]: NEGATIVE,
                                     roles["role_logs"]: BASE,
                                     roles["role_detained"]: NEGATIVE,
                                     roles["role_everyone"]: NEGATIVE,
@@ -1027,9 +1036,7 @@ class Migrate(commands.GroupCog, name="migrate"):
                             overwrites=generate_overwrites(
                                 interaction,
                                 roles=roles,
-                                channel=DB_CHANNEL_NAME_MAP[channel_name].lstrip("vc")[
-                                    1:
-                                ],
+                                channel=DB_CHANNEL_NAME_MAP[channel_name],
                             ),
                         )
             else:

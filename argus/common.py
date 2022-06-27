@@ -1,6 +1,5 @@
 import math
 import typing
-from datetime import timedelta
 from queue import Queue
 from typing import Optional, List
 
@@ -60,6 +59,14 @@ async def send_embed_message(
     if room.studio:
         embed.title = f"{embed.title} [Recording]"
         embed.add_field(name="Studio Engineer", value=f"{room.studio_engineer.mention}")
+
+    if room.lounge:
+        embed.title = f"{embed.title} [Lounge]"
+        embed.description = (
+            f"Lounge rooms are under the control of the lounge master. "
+            f"They can mute you for any reason."
+        )
+        embed.add_field(name="Lounge Master", value=f"{room.lounge_master.mention}")
 
     topic_updated = get_room(bot, room_num).set_current_topic()
     current_topic = get_room(bot, room_num).current_topic
@@ -354,6 +361,14 @@ async def update_im(bot: ArgusClient, room_num: int):
     if room.studio:
         embed.title = f"{embed.title} [Recording]"
         embed.add_field(name="Studio Engineer", value=f"{room.studio_engineer.mention}")
+
+    if room.lounge:
+        embed.title = f"{embed.title} [Lounge]"
+        embed.description = (
+            f"Lounge rooms are under the control of the lounge master. "
+            f"They can mute you for any reason."
+        )
+        embed.add_field(name="Lounge Master", value=f"{room.lounge_master.mention}")
 
     topic = room.current_topic
     if topic:

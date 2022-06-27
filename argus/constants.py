@@ -22,6 +22,7 @@ DB_ROLE_NAME_MAP = {
     "Judge": "role_judge",
     "Citizen": "role_citizen",
     "Member": "role_member",
+    "Promoter": "role_promoter",
     "Logs": "role_logs",
     "Events": "role_events",
     "Debate Ping": "role_debate_ping",
@@ -118,8 +119,10 @@ ROLE_PERMISSIONS = {
     "role_incompetent": 0,
     "role_bot": 0,
     "role_judge": 517580639296,
+    "role_server_booster": 1067336453696,
     "role_citizen": 517580639296,
     "role_member": 517580639296,
+    "role_promoter": 1067336453696,
     "role_logs": 0,
     "role_events": 0,
     "role_debate_ping": 0,
@@ -149,8 +152,10 @@ ROLE_COLORS = {
     "role_incompetent": None,
     "role_bot": None,
     "role_judge": 0xE67E22,
+    "role_server_booster": None,
     "role_citizen": 0x3498DB,
     "role_member": None,
+    "role_promoter": None,
     "role_logs": None,
     "role_events": None,
     "role_debate_ping": None,
@@ -171,3 +176,7 @@ PLUGINS = [
     "plugins.parliament",
     "plugins.security",
 ]
+
+
+if __name__ == "__main__":
+    print(CHANNEL_SORT_ORDER)

@@ -3,13 +3,13 @@ import io
 import math
 import random
 import typing
+from asyncio import Task
 from datetime import datetime
 from queue import Queue
 from typing import Optional
 
 import discord
 import matplotlib.pyplot as plt
-import numpy as np
 import openskill
 import pymongo
 from discord import app_commands, Member, Interaction, Embed, Role
@@ -547,6 +547,15 @@ class Topic(
             )
             return
 
+        if room.lounge:
+            embed = Embed(
+                title="Command Unauthorized",
+                description=f"You cannot use this command in a lounge room.",
+                color=0xE74C3C,
+            )
+            await update(interaction, embed=embed, ephemeral=True)
+            return
+
         topic_updated = room.add_topic(
             DebateTopic(
                 member=interaction.user,
@@ -601,6 +610,15 @@ class Topic(
         room_number = get_room_number(self.bot, channel)
         room: typing.Optional[DebateRoom] = get_room(self.bot, room_number)
         candidate = member
+
+        if room.lounge:
+            embed = Embed(
+                title="Command Unauthorized",
+                description=f"You cannot use this command in a lounge room.",
+                color=0xE74C3C,
+            )
+            await update(interaction, embed=embed, ephemeral=True)
+            return
 
         if not room.check_match():
             await update(
@@ -679,6 +697,15 @@ class Topic(
             )
             return
 
+        if room.lounge:
+            embed = Embed(
+                title="Command Unauthorized",
+                description=f"You cannot use this command in a lounge room.",
+                color=0xE74C3C,
+            )
+            await update(interaction, embed=embed, ephemeral=True)
+            return
+
         if not member:
             member = interaction.user
 
@@ -725,6 +752,15 @@ class Topic(
         channel = interaction.channel
         room_number = get_room_number(self.bot, channel)
         room: typing.Optional[DebateRoom] = get_room(self.bot, room_number)
+
+        if room.lounge:
+            embed = Embed(
+                title="Command Unauthorized",
+                description=f"You cannot use this command in a lounge room.",
+                color=0xE74C3C,
+            )
+            await update(interaction, embed=embed, ephemeral=True)
+            return
 
         if not room.check_match():
             await update(
@@ -816,6 +852,8 @@ class Topic(
 class Debate(commands.Cog):
     def __init__(self, bot: ArgusClient) -> None:
         self.bot = bot
+        self.studio_task: Optional[Task] = None
+        self.lounge_task: Optional[Task] = None
         super().__init__()
 
     @commands.Cog.listener()
@@ -874,6 +912,15 @@ class Debate(commands.Cog):
                 ),
                 ephemeral=True,
             )
+            return
+
+        if room.lounge:
+            embed = Embed(
+                title="Command Unauthorized",
+                description=f"You cannot use this command in a lounge room.",
+                color=0xE74C3C,
+            )
+            await update(interaction, embed=embed, ephemeral=True)
             return
 
         if not room.check_match():
@@ -959,6 +1006,15 @@ class Debate(commands.Cog):
                 errored=True,
                 ephemeral=True,
             )
+            return
+
+        if room.lounge:
+            embed = Embed(
+                title="Command Unauthorized",
+                description=f"You cannot use this command in a lounge room.",
+                color=0xE74C3C,
+            )
+            await update(interaction, embed=embed, ephemeral=True)
             return
 
         if not room.check_match():
@@ -1047,6 +1103,15 @@ class Debate(commands.Cog):
                 errored=True,
                 ephemeral=True,
             )
+            return
+
+        if room.lounge:
+            embed = Embed(
+                title="Command Unauthorized",
+                description=f"You cannot use this command in a lounge room.",
+                color=0xE74C3C,
+            )
+            await update(interaction, embed=embed, ephemeral=True)
             return
 
         if not room.check_match():
@@ -1155,6 +1220,15 @@ class Debate(commands.Cog):
             )
             return
 
+        if room.lounge:
+            embed = Embed(
+                title="Command Unauthorized",
+                description=f"You cannot use this command in a lounge room.",
+                color=0xE74C3C,
+            )
+            await update(interaction, embed=embed, ephemeral=True)
+            return
+
         if not room.check_match():
             await update(
                 interaction,
@@ -1246,6 +1320,15 @@ class Debate(commands.Cog):
             )
             return
 
+        if room.lounge:
+            embed = Embed(
+                title="Command Unauthorized",
+                description=f"You cannot use this command in a lounge room.",
+                color=0xE74C3C,
+            )
+            await update(interaction, embed=embed, ephemeral=True)
+            return
+
         if room.match:
             if room.match.concluding:
                 await update(
@@ -1311,6 +1394,15 @@ class Debate(commands.Cog):
                 errored=True,
                 ephemeral=True,
             )
+            return
+
+        if room.lounge:
+            embed = Embed(
+                title="Command Unauthorized",
+                description=f"You cannot use this command in a lounge room.",
+                color=0xE74C3C,
+            )
+            await update(interaction, embed=embed, ephemeral=True)
             return
 
         if room.match:
@@ -1384,6 +1476,15 @@ class Debate(commands.Cog):
             )
             return
 
+        if room.lounge:
+            embed = Embed(
+                title="Command Unauthorized",
+                description=f"You cannot use this command in a lounge room.",
+                color=0xE74C3C,
+            )
+            await update(interaction, embed=embed, ephemeral=True)
+            return
+
         if room.match:
             if room.match.concluding:
                 await update(
@@ -1455,6 +1556,15 @@ class Debate(commands.Cog):
                 ),
                 ephemeral=True,
             )
+            return
+
+        if room.lounge:
+            embed = Embed(
+                title="Command Unauthorized",
+                description=f"You cannot use this command in a lounge room.",
+                color=0xE74C3C,
+            )
+            await update(interaction, embed=embed, ephemeral=True)
             return
 
         if not room.check_match():
@@ -1703,6 +1813,15 @@ class Debate(commands.Cog):
                     ephemeral=True,
                 )
 
+        if room.lounge:
+            embed = Embed(
+                title="Command Unauthorized",
+                description=f"You cannot use this command in a lounge room.",
+                color=0xE74C3C,
+            )
+            await update(interaction, embed=embed, ephemeral=True)
+            return
+
         if room.studio:
             room.studio_participants.append(author)
             if room.match:
@@ -1819,6 +1938,34 @@ class Debate(commands.Cog):
             member_data = MemberModel(member=member)
             await self.bot.engine.save(member_data)
 
+    async def studio_release(self, room: DebateRoom):
+        embed = Embed(
+            title="Studio Expiring",
+            description=f"This room will become available in 2 minutes "
+            f"because {room.studio_engineer.mention} has left.",
+            color=0xF1C40F,
+        )
+        await room.vc.send(embeds=[embed])
+        await asyncio.sleep(120)
+
+        room.studio = False
+        room.studio_engineer = None
+        await update_im(bot=self.bot, room_num=room.number)
+
+    async def lounge_release(self, room: DebateRoom):
+        embed = Embed(
+            title="Lounge Expiring",
+            description=f"This room will become available in 5 minutes "
+            f"because {room.lounge_master.mention} has left.",
+            color=0xF1C40F,
+        )
+        await room.vc.send(embeds=[embed])
+        await asyncio.sleep(300)
+
+        room.lounge = False
+        room.lounge_master = None
+        await update_im(bot=self.bot, room_num=room.number)
+
     @commands.Cog.listener()
     async def on_voice_state_update(self, member, before, after):
         debate_rooms: typing.List[DebateRoom] = self.bot.state["debate_rooms"]
@@ -1882,6 +2029,15 @@ class Debate(commands.Cog):
                     if room_after.match.check_debater(member):
                         if room_after.private:
                             if room_after.studio:
+                                if member == room_after.studio_engineer:
+                                    self.studio_task.cancel()
+                                    embed = Embed(
+                                        title="Studio Expiration Cancelled",
+                                        description="The studio's engineer has returned.",
+                                        color=0x2ECC71,
+                                    )
+                                    await room_after.vc.send(embeds=[embed])
+
                                 if (
                                     self.bot.state["map_roles"]["role_detained"]
                                     in member.roles
@@ -1907,6 +2063,15 @@ class Debate(commands.Cog):
                                         await member.edit(mute=True)
                         else:
                             if room_after.studio:
+                                if member == room_after.studio_engineer:
+                                    self.studio_task.cancel()
+                                    embed = Embed(
+                                        title="Studio Expiration Cancelled",
+                                        description="The studio's engineer has returned.",
+                                        color=0x2ECC71,
+                                    )
+                                    await room_after.vc.send(embeds=[embed])
+
                                 if (
                                     self.bot.state["map_roles"]["role_detained"]
                                     in member.roles
@@ -1925,6 +2090,15 @@ class Debate(commands.Cog):
                                     await member.edit(mute=False)
                     else:
                         if room_after.studio:
+                            if member == room_after.studio_engineer:
+                                self.studio_task.cancel()
+                                embed = Embed(
+                                    title="Studio Expiration Cancelled",
+                                    description="The studio's engineer has returned.",
+                                    color=0x2ECC71,
+                                )
+                                await room_after.vc.send(embeds=[embed])
+
                             if member not in room_after.studio_participants:
                                 await member.edit(mute=True)
                         else:
@@ -1932,6 +2106,15 @@ class Debate(commands.Cog):
                 else:
                     if room_after.private:
                         if room_after.studio:
+                            if member == room_after.studio_engineer:
+                                self.studio_task.cancel()
+                                embed = Embed(
+                                    title="Studio Expiration Cancelled",
+                                    description="The studio's engineer has returned.",
+                                    color=0x2ECC71,
+                                )
+                                await room_after.vc.send(embeds=[embed])
+
                             if (
                                 self.bot.state["map_roles"]["role_detained"]
                                 in member.roles
@@ -1961,6 +2144,15 @@ class Debate(commands.Cog):
                                     await member.edit(mute=True)
                     else:
                         if room_after.studio:
+                            if member == room_after.studio_engineer:
+                                self.studio_task.cancel()
+                                embed = Embed(
+                                    title="Studio Expiration Cancelled",
+                                    description="The studio's engineer has returned.",
+                                    color=0x2ECC71,
+                                )
+                                await room_after.vc.send(embeds=[embed])
+
                             if (
                                 self.bot.state["map_roles"]["role_detained"]
                                 in member.roles
@@ -1971,6 +2163,19 @@ class Debate(commands.Cog):
                                     await member.edit(mute=False)
                                 else:
                                     await member.edit(mute=True)
+                        elif room_after.lounge:
+                            # Allow lounge masters to mute users
+                            if room_after.lounge_master == member:
+                                await room_after.vc.set_permissions(
+                                    member, mute_members=True, send_messages=True
+                                )
+                                self.lounge_task.cancel()
+                                embed = Embed(
+                                    title="Lounge Expiration Cancelled",
+                                    description="The lounge's master has returned.",
+                                    color=0x2ECC71,
+                                )
+                                await room_after.vc.send(embeds=[embed])
                         else:
                             if (
                                 self.bot.state["map_roles"]["role_detained"]
@@ -2006,13 +2211,16 @@ class Debate(commands.Cog):
                     await room_before.vc.set_permissions(member, overwrite=None)
 
                     # Remove Recording Session
-                    try:
-                        if member == room_before.studio_engineer:
-                            await asyncio.wait_for(asyncio.sleep(180), timeout=120)
-                    except asyncio.TimeoutError:
-                        room_before.studio = False
-                        room_before.studio_engineer = None
-                        await update_im(bot=self.bot, room_num=room_before.number)
+                    if member == room_before.studio_engineer:
+                        self.studio_task = asyncio.create_task(
+                            self.studio_release(room_before)
+                        )
+
+                    # Remove Lounge Session
+                    if member == room_before.lounge_master:
+                        self.lounge_task = asyncio.create_task(
+                            self.lounge_release(room_before)
+                        )
 
                     # Delete if not working
                     room_before.updating_topic = True
@@ -2145,6 +2353,15 @@ class Studio(
             )
             return
 
+        if room.lounge:
+            embed = Embed(
+                title="Command Unauthorized",
+                description=f"You cannot record in lounge rooms.",
+                color=0xE74C3C,
+            )
+            await update(interaction, embed=embed, ephemeral=True)
+            return
+
         if room.studio:
             embed = Embed(
                 title="Command Unauthorized",
@@ -2199,6 +2416,15 @@ class Studio(
             )
             return
 
+        if room.lounge:
+            embed = Embed(
+                title="Command Unauthorized",
+                description=f"You cannot record in lounge rooms.",
+                color=0xE74C3C,
+            )
+            await update(interaction, embed=embed, ephemeral=True)
+            return
+
         if not room.studio:
             embed = Embed(
                 title="Command Unauthorized",
@@ -2237,6 +2463,152 @@ class Studio(
             return
 
 
+@app_commands.default_permissions(send_messages=True)
+class Lounge(
+    commands.GroupCog,
+    name="lounge",
+    description="Control the lounge status of a debate room.",
+):
+    def __init__(self, bot: ArgusClient) -> None:
+        self.bot = bot
+        super().__init__()
+
+    @app_commands.command(
+        name="claim",
+        description="Claim a debate room as a lounge.",
+    )
+    @app_commands.checks.has_any_role("Server Booster")
+    async def claim(self, interaction: discord.Interaction) -> None:
+        # These checks handle error messages automatically.
+        if not await in_debate_room(self.bot, interaction):
+            return
+
+        channel = interaction.channel
+        room_number = get_room_number(self.bot, channel)
+        room: typing.Optional[DebateRoom] = get_room(self.bot, room_number)
+        author = interaction.user
+
+        if room.updating_topic:
+            await update(
+                interaction,
+                embed=Embed(
+                    title="Command Temporarily Disabled",
+                    description="This command only works once the topic has finished updating.",
+                    color=0xE74C3C,
+                ),
+                errored=True,
+                ephemeral=True,
+            )
+            return
+
+        if room.check_match():
+            await update(
+                interaction,
+                embed=Embed(
+                    title="Command Unauthorized",
+                    description=f"You can only claim a room without an existing match.",
+                    color=0xE74C3C,
+                ),
+            )
+            return
+
+        if room.lounge:
+            embed = Embed(
+                title="Command Unauthorized",
+                description=f"This room is already claimed by f{room.lounge_master.mention}.",
+                color=0xE74C3C,
+            )
+            await update(interaction, embed=embed, ephemeral=True)
+            return
+        else:
+            room.lounge = True
+            room.lounge_master = author
+
+            await interaction.response.defer()
+
+            await room.vc.set_permissions(
+                target=author, mute_members=True, send_messages=True
+            )
+
+            await update_im(bot=self.bot, room_num=room.number)
+
+            embed = Embed(
+                title="Lounge Initialized",
+                description="This room is now a lounge room.",
+                color=0x2ECC71,
+            )
+            await update(interaction, embed=embed)
+            return
+
+    @app_commands.command(
+        name="release",
+        description="Convert a lounge back into a debate room.",
+    )
+    @app_commands.checks.has_any_role("Server Booster")
+    async def release(self, interaction: discord.Interaction) -> None:
+        # These checks handle error messages automatically.
+        if not await in_debate_room(self.bot, interaction):
+            return
+
+        channel = interaction.channel
+        room_number = get_room_number(self.bot, channel)
+        room: typing.Optional[DebateRoom] = get_room(self.bot, room_number)
+        author = interaction.user
+
+        if room.updating_topic:
+            await update(
+                interaction,
+                embed=Embed(
+                    title="Command Temporarily Disabled",
+                    description="This command only works once the topic has finished updating.",
+                    color=0xE74C3C,
+                ),
+                errored=True,
+                ephemeral=True,
+            )
+            return
+
+        if not room.lounge:
+            embed = Embed(
+                title="Command Unauthorized",
+                description=f"This is not a lounge room.",
+                color=0xE74C3C,
+            )
+            await update(interaction, embed=embed, ephemeral=True)
+            return
+        else:
+            if author != room.lounge_master:
+                embed = Embed(
+                    title="Command Unauthorized",
+                    description=f"Only the lounge master can run this command.",
+                    color=0xE74C3C,
+                )
+                await update(interaction, embed=embed, ephemeral=True)
+                return
+
+            await interaction.response.defer()
+
+            room.lounge = False
+            room.lounge_master = None
+
+            await room.vc.set_permissions(
+                target=author, mute_members=None, send_messages=True
+            )
+
+            for member in room.vc.members:
+                await member.edit(mute=False)
+
+            await update_im(bot=self.bot, room_num=room.number)
+
+            embed = Embed(
+                title="Lounge Release",
+                description="This room is free for ranked debates now.",
+                color=0x2ECC71,
+            )
+            await update(interaction, embed=embed)
+            return
+
+
 async def setup(bot: ArgusClient) -> None:
     await bot.add_cog(
         Skill(bot), guilds=[discord.Object(id=bot.config["global"]["guild_id"])]
@@ -2249,4 +2621,7 @@ async def setup(bot: ArgusClient) -> None:
     )
     await bot.add_cog(
         Studio(bot), guilds=[discord.Object(id=bot.config["global"]["guild_id"])]
+    )
+    await bot.add_cog(
+        Lounge(bot), guilds=[discord.Object(id=bot.config["global"]["guild_id"])]
     )

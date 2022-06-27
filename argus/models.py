@@ -305,6 +305,10 @@ class DebateRoom:
         self.private = False
         self.private_debaters: List[Member] = []
 
+        # Lounge
+        self.lounge = False
+        self.lounge_master: Optional[Member] = None
+
         # Progress State
         self.updating_topic = False
 

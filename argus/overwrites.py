@@ -1,6 +1,6 @@
 from discord import PermissionOverwrite, Interaction
 
-from argus.constants import CHANNEL_SORT_ORDER
+from argus.constants import CHANNEL_SORT_ORDER, DB_CHANNEL_NAME_MAP
 
 BASE = PermissionOverwrite()
 INVITE = PermissionOverwrite(
@@ -48,7 +48,7 @@ INVITE_READ_MESSAGE_HISTORY_ONLY = PermissionOverwrite(
 GENERAL = PermissionOverwrite(
     create_instant_invite=True,
     embed_links=False,
-    attach_files=False,
+    attach_files=True,
 )
 ANNOUNCEMENT_ELEVATED = PermissionOverwrite(
     send_messages=True,
@@ -169,6 +169,7 @@ OVERWRITE_MAP = {
         "role_judge": INVITE_READ_MESSAGE_HISTORY_ONLY,
         "role_citizen": INVITE_READ_MESSAGE_HISTORY_ONLY,
         "role_member": INVITE_READ_MESSAGE_HISTORY_ONLY,
+        "role_promoter": INVITE_READ_MESSAGE_HISTORY_ONLY,
         "role_logs": BASE,
         "role_detained": NEGATIVE,
         "role_everyone": INVITE_READ_MESSAGE_HISTORY_ONLY,
@@ -184,6 +185,7 @@ OVERWRITE_MAP = {
         "role_judge": INVITE_READ_MESSAGE_HISTORY_ONLY,
         "role_citizen": INVITE_READ_MESSAGE_HISTORY_ONLY,
         "role_member": INVITE_READ_MESSAGE_HISTORY_ONLY,
+        "role_promoter": INVITE_READ_MESSAGE_HISTORY_ONLY,
         "role_logs": BASE,
         "role_detained": NEGATIVE,
         "role_everyone": INVITE_READ_MESSAGE_HISTORY_ONLY,
@@ -199,6 +201,7 @@ OVERWRITE_MAP = {
         "role_judge": NEGATIVE,
         "role_citizen": NEGATIVE,
         "role_member": NEGATIVE,
+        "role_promoter": NEGATIVE,
         "role_logs": BASE,
         "role_detained": NEGATIVE,
         "role_everyone": NEGATIVE,
@@ -214,6 +217,7 @@ OVERWRITE_MAP = {
         "role_judge": NEGATIVE,
         "role_citizen": NEGATIVE,
         "role_member": NEGATIVE,
+        "role_promoter": NEGATIVE,
         "role_logs": BASE,
         "role_detained": NEGATIVE,
         "role_everyone": NEGATIVE,
@@ -229,6 +233,7 @@ OVERWRITE_MAP = {
         "role_judge": BASE,
         "role_citizen": NEGATIVE,
         "role_member": NEGATIVE,
+        "role_promoter": NEGATIVE,
         "role_logs": BASE,
         "role_detained": EXPLICIT_READ_MESSAGE_HISTORY_ONLY,
         "role_everyone": NEGATIVE,
@@ -244,6 +249,7 @@ OVERWRITE_MAP = {
         "role_judge": BASE,
         "role_citizen": INVITE_READ_MESSAGE_HISTORY_ONLY,
         "role_member": INVITE_READ_MESSAGE_HISTORY_ONLY,
+        "role_promoter": INVITE_READ_MESSAGE_HISTORY_ONLY,
         "role_logs": BASE,
         "role_detained": NEGATIVE,
         "role_everyone": INVITE_READ_MESSAGE_HISTORY_ONLY,
@@ -259,6 +265,7 @@ OVERWRITE_MAP = {
         "role_judge": BASE,
         "role_citizen": INVITE,
         "role_member": INVITE,
+        "role_promoter": INVITE,
         "role_logs": BASE,
         "role_detained": NEGATIVE,
         "role_everyone": INVITE,
@@ -274,6 +281,7 @@ OVERWRITE_MAP = {
         "role_judge": BASE,
         "role_citizen": EVENTS,
         "role_member": EVENTS,
+        "role_promoter": EVENTS,
         "role_logs": BASE,
         "role_detained": NEGATIVE,
         "role_everyone": INVITE,
@@ -289,6 +297,7 @@ OVERWRITE_MAP = {
         "role_judge": BASE,
         "role_citizen": INVITE,
         "role_member": INVITE,
+        "role_promoter": INVITE,
         "role_logs": BASE,
         "role_detained": NEGATIVE,
         "role_everyone": INVITE,
@@ -304,6 +313,7 @@ OVERWRITE_MAP = {
         "role_judge": BASE,
         "role_citizen": GENERAL,
         "role_member": GENERAL,
+        "role_promoter": GENERAL,
         "role_logs": BASE,
         "role_detained": NEGATIVE,
         "role_everyone": GENERAL,
@@ -319,6 +329,7 @@ OVERWRITE_MAP = {
         "role_judge": GENERAL_PARLIAMENT,
         "role_citizen": GENERAL_PARLIAMENT,
         "role_member": GENERAL_PARLIAMENT,
+        "role_promoter": GENERAL_PARLIAMENT,
         "role_logs": BASE,
         "role_detained": NEGATIVE,
         "role_everyone": GENERAL_PARLIAMENT,
@@ -334,6 +345,7 @@ OVERWRITE_MAP = {
         "role_judge": GENERAL_PARLIAMENT,
         "role_citizen": GENERAL_PARLIAMENT,
         "role_member": GENERAL_PARLIAMENT,
+        "role_promoter": GENERAL_PARLIAMENT,
         "role_logs": BASE,
         "role_detained": NEGATIVE,
         "role_everyone": GENERAL_PARLIAMENT,
@@ -349,6 +361,7 @@ OVERWRITE_MAP = {
         "role_judge": BASE,
         "role_citizen": DEBATE_TEXT_DENY,
         "role_member": DEBATE_TEXT_DENY,
+        "role_promoter": BASE,
         "role_logs": BASE,
         "role_detained": NEGATIVE,
         "role_everyone": DEBATE_TEXT_DENY,
@@ -364,6 +377,7 @@ OVERWRITE_MAP = {
         "role_judge": BASE,
         "role_citizen": NEGATIVE,
         "role_member": NEGATIVE,
+        "role_promoter": NEGATIVE,
         "role_logs": READ_MESSAGE_HISTORY_ONLY,
         "role_detained": NEGATIVE,
         "role_everyone": NEGATIVE,
@@ -375,13 +389,26 @@ def generate_overwrites(interaction: Interaction, roles, channel: str):
     """
     A dict of roles and their overwrites for a specific channel.
     """
+    if channel.startswith("vc"):
+        channel = channel.lstrip("vc").lstrip("_")
+        channel = channel.replace("_", " ")
+    elif channel.startswith("tc"):
+        # "tc_" is an escape sequence, so use this hack for now
+        channel = channel.lstrip(r"tc").lstrip("_")
+        channel = channel.replace("_", "-")
+    elif channel.startswith("category"):
+        channel = channel.lstrip("category").lstrip("_")
+        channel = channel.replace("_", " ")
+
     if channel.lower() not in OVERWRITE_MAP:
         if channel not in CHANNEL_SORT_ORDER.keys():
             for category in CHANNEL_SORT_ORDER.keys():
-                channel = channel.replace("_", "-")
                 if channel in CHANNEL_SORT_ORDER[category]:
                     channel = category
                     break
+
+    if channel in ["house of lords", "house of commons"]:
+        channel = "parliament"
 
     overwrites = OVERWRITE_MAP[channel.lower()]
     return {
@@ -395,6 +422,7 @@ def generate_overwrites(interaction: Interaction, roles, channel: str):
         roles["role_judge"]: overwrites["role_judge"],
         roles["role_citizen"]: overwrites["role_citizen"],
         roles["role_member"]: overwrites["role_member"],
+        roles["role_promoter"]: overwrites["role_promoter"],
         roles["role_logs"]: overwrites["role_logs"],
         roles["role_detained"]: overwrites["role_detained"],
         interaction.guild.default_role: overwrites["role_everyone"],

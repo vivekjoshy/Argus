@@ -49,13 +49,21 @@ class Lockdown(commands.GroupCog, name="lockdown"):
         roles["role_member"] = discord.utils.get(interaction.guild.roles, name="Member")
         roles["role_everyone"] = interaction.guild.default_role
 
-        await roles["role_citizen"].edit(
+        if interaction.guild.premium_subscriber_role:
+            await interaction.guild.premium_subscriber_role.edit(
+                permissions=Permissions(permissions=137474982912)
+            )
+
+        await roles["role_judge"].edit(
             permissions=Permissions(permissions=137474982912)
         )
         await roles["role_citizen"].edit(
             permissions=Permissions(permissions=137474982912)
         )
         await roles["role_member"].edit(
+            permissions=Permissions(permissions=137474982912)
+        )
+        await roles["role_promoter"].edit(
             permissions=Permissions(permissions=137474982912)
         )
         await roles["role_everyone"].edit(permissions=Permissions(permissions=35718144))
@@ -140,7 +148,17 @@ class Lockdown(commands.GroupCog, name="lockdown"):
             interaction.guild.roles, name="Citizen"
         )
         roles["role_member"] = discord.utils.get(interaction.guild.roles, name="Member")
+        roles["role_promoter"] = discord.utils.get(
+            interaction.guild.roles, name="Promoter"
+        )
         roles["role_everyone"] = interaction.guild.default_role
+
+        if interaction.guild.premium_subscriber_role:
+            await interaction.guild.premium_subscriber_role.edit(
+                permissions=Permissions(
+                    permissions=ROLE_PERMISSIONS["role_server_booster"]
+                )
+            )
 
         await roles["role_judge"].edit(
             permissions=Permissions(permissions=ROLE_PERMISSIONS["role_judge"])
@@ -151,6 +169,9 @@ class Lockdown(commands.GroupCog, name="lockdown"):
         )
         await roles["role_member"].edit(
             permissions=Permissions(permissions=ROLE_PERMISSIONS["role_member"])
+        )
+        await roles["role_promoter"].edit(
+            permissions=Permissions(permissions=ROLE_PERMISSIONS["role_promoter"])
         )
         await roles["role_everyone"].edit(
             permissions=Permissions(permissions=ROLE_PERMISSIONS["role_everyone"])
