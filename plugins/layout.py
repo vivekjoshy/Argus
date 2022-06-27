@@ -48,7 +48,6 @@ class Setup(commands.GroupCog, name="setup"):
             "role_incompetent": None,
             "role_bot": None,
             "role_judge": None,
-            "role_server_booster": None,
             "role_citizen": None,
             "role_member": None,
             "role_promoter": None,
@@ -277,7 +276,6 @@ class Setup(commands.GroupCog, name="setup"):
 
         # Membership Roles
         if interaction.guild.premium_subscriber_role:
-            roles["role_server_booster"] = interaction.guild.premium_subscriber_role
             await interaction.guild.premium_subscriber_role.edit()
 
         roles["role_judge"] = await interaction.guild.create_role(
