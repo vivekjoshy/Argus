@@ -34,6 +34,7 @@ async def make_vc_invisible(bot: ArgusClient, vc: VoiceChannel):
             roles["role_judge"]: NEGATIVE,
             roles["role_citizen"]: NEGATIVE,
             roles["role_member"]: NEGATIVE,
+            roles["role_promoter"]: NEGATIVE,
             roles["role_logs"]: BASE,
             roles["role_detained"]: NEGATIVE,
             roles["role_everyone"]: NEGATIVE,

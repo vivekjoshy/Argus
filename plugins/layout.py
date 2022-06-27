@@ -1061,6 +1061,7 @@ class Migrate(commands.GroupCog, name="migrate"):
                             roles["role_judge"]: NEGATIVE,
                             roles["role_citizen"]: NEGATIVE,
                             roles["role_member"]: NEGATIVE,
+                            roles["role_promoter"]: BASE,
                             roles["role_logs"]: BASE,
                             roles["role_detained"]: NEGATIVE,
                             roles["role_everyone"]: NEGATIVE,
