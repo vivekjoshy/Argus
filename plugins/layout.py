@@ -1046,7 +1046,7 @@ class Migrate(commands.GroupCog, name="migrate"):
                     interaction, roles=roles, channel=channel_name
                 )
 
-                if _channel.name.startswith("Debate"):
+                if _channel.name.startswith("Debate") and _channel.category:
                     if not _channel.name.endswith(" 1"):
                         overwrites = {
                             roles["role_moderation_bot"]: MODERATION_BOT,
