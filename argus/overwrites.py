@@ -316,7 +316,7 @@ OVERWRITE_MAP = {
         "role_promoter": GENERAL,
         "role_logs": BASE,
         "role_detained": NEGATIVE,
-        "role_everyone": GENERAL,
+        "role_everyone": INVITE,
     },
     "parliament": {
         "role_moderation_bot": MODERATION_BOT,
