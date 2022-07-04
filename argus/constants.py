@@ -59,6 +59,9 @@ for _channel_number in range(1, 21):
 
 DB_CHANNEL_NAME_MAP.update(
     {
+        "Partners": "category_partners",
+        "similar": "tc_similar",
+        "awesome": "tc_awesome",
         "Logs": "category_logs",
         "moderator-actions": "tc_moderator_actions",
         "message-deletion": "tc_message_deletion",

@@ -81,6 +81,9 @@ class Setup(commands.GroupCog, name="setup"):
             "vc_house_of_lords": None,
             "vc_house_of_commons": None,
             "category_debate": None,
+            "category_partners": None,
+            "tc_similar": None,
+            "tc_awesome": None,
             "category_logs": None,
             "tc_moderator_actions": None,
             "tc_message_deletion": None,
@@ -578,6 +581,30 @@ class Setup(commands.GroupCog, name="setup"):
         channels["category_debate"] = await guild.create_category_channel(
             name="Debate",
             overwrites=generate_overwrites(interaction, roles=roles, channel="debate"),
+        )
+
+        # Setup Partners Category
+        channels["category_partners"] = await guild.create_category_channel(
+            name="Partners",
+            overwrites=generate_overwrites(
+                interaction, roles=roles, channel="partners"
+            ),
+        )
+
+        channels["tc_similar"] = await guild.create_text_channel(
+            name="similar",
+            category=channels["category_partners"],
+            overwrites=generate_overwrites(
+                interaction, roles=roles, channel="partners"
+            ),
+        )
+
+        channels["tc_awesome"] = await guild.create_text_channel(
+            name="awesome",
+            category=channels["category_partners"],
+            overwrites=generate_overwrites(
+                interaction, roles=roles, channel="partners"
+            ),
         )
 
         # Setup Logs Category
