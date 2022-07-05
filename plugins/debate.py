@@ -296,7 +296,7 @@ class Skill(
             embed.add_field(
                 name="Win Probability",
                 value=f"{player_a.mention} has a "
-                f"{((player_a_probability - player_b_probability) / player_b_probability) * 100: .2f}% "
+                f"{(player_a_probability - player_b_probability) * 100: .2f}% "
                 f"chance of winning against {player_b.mention}.",
                 inline=False,
             )
@@ -317,7 +317,7 @@ class Skill(
             embed.add_field(
                 name="Win Probability",
                 value=f"{player_b.mention} has a "
-                f"{((player_b_probability - player_a_probability) / player_a_probability) * 100: .2f}% "
+                f"{(player_b_probability - player_a_probability) * 100: .2f}% "
                 f"chance of winning against {player_a.mention}.",
                 inline=False,
             )
