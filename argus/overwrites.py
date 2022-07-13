@@ -1,6 +1,6 @@
 from discord import PermissionOverwrite, Interaction
 
-from argus.constants import CHANNEL_SORT_ORDER, DB_CHANNEL_NAME_MAP
+from argus.constants import CHANNEL_SORT_ORDER
 
 BASE = PermissionOverwrite()
 INVITE = PermissionOverwrite(
@@ -374,13 +374,13 @@ OVERWRITE_MAP = {
         "role_minister": MODERATION_TEAM,
         "role_host": BASE,
         "role_bot": BASE,
-        "role_judge": NEGATIVE,
-        "role_citizen": NEGATIVE,
-        "role_member": NEGATIVE,
-        "role_promoter": NEGATIVE,
+        "role_judge": INVITE_READ_MESSAGE_HISTORY_ONLY,
+        "role_citizen": INVITE_READ_MESSAGE_HISTORY_ONLY,
+        "role_member": INVITE_READ_MESSAGE_HISTORY_ONLY,
+        "role_promoter": INVITE_READ_MESSAGE_HISTORY_ONLY,
         "role_logs": BASE,
         "role_detained": NEGATIVE,
-        "role_everyone": NEGATIVE,
+        "role_everyone": INVITE_READ_MESSAGE_HISTORY_ONLY,
     },
     "logs": {
         "role_moderation_bot": MODERATION_BOT,
