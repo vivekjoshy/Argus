@@ -171,13 +171,13 @@ BOT_DESCRIPTION = "Elections and Debates for Discord Servers"
 
 # Bot Plugins Directories
 PLUGINS = [
-    "plugins.debate",
-    "plugins.election",
-    "plugins.global",
-    "plugins.layout",
-    "plugins.meta",
-    "plugins.parliament",
-    "plugins.security",
+    "argus.plugins.debate",
+    "argus.plugins.election",
+    "argus.plugins.global",
+    "argus.plugins.layout",
+    "argus.plugins.meta",
+    "argus.plugins.parliament",
+    "argus.plugins.security",
 ]
 
 
