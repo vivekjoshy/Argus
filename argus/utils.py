@@ -9,7 +9,7 @@ async def update(interaction: Interaction, *args, **kwargs):
     if interaction.response.is_done():
         if "ephemeral" in kwargs:
             kwargs.pop("ephemeral")
-        await interaction.response.edit_message(*args, **kwargs)
+        await interaction.edit_original_response(*args, **kwargs)
     else:
         await interaction.response.send_message(*args, **kwargs)
 
