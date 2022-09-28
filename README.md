@@ -53,6 +53,12 @@ To start the bot simply do this:
 argus
 ```
 
+Sync commands to the server by sending this in any channel:
+
+```
+$sync
+```
+
 Finally initialize the server by doing:
 
 ```
