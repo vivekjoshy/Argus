@@ -50,7 +50,7 @@ pip install -e .
 To start the bot simply do this:
 
 ```bash
-argus start --config config.toml
+argus
 ```
 
 Finally initialize the server by doing:
