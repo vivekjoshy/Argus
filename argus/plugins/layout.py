@@ -573,7 +573,7 @@ class Setup(commands.GroupCog, name="setup"):
             name="House of Commons",
             category=channels["category_parliament"],
             overwrites=generate_overwrites(
-                interaction, roles=roles, channel="house_of_commons"
+                interaction, roles=roles, channel="house-of-commons"
             ),
         )
 
