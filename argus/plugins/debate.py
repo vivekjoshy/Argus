@@ -1937,6 +1937,7 @@ class Debate(commands.Cog):
         else:
             member_data = MemberModel(member=member)
             await self.bot.engine.save(member_data)
+            await member.add_roles(self.bot.state["map_roles"]["role_novice"])
 
     async def studio_release(self, room: DebateRoom):
         embed = Embed(
