@@ -4,7 +4,7 @@ import math
 import random
 import typing
 from asyncio import Task
-from datetime import datetime
+from datetime import datetime, timedelta
 from queue import Queue
 from typing import Optional
 
@@ -18,8 +18,10 @@ from discord.app_commands import (
     MissingAnyRole,
     MissingPermissions,
     AppCommandError,
+    CommandOnCooldown,
 )
 from discord.ext import commands
+from humanize import precisedelta
 from matplotlib import ticker
 
 from argus.client import ArgusClient
@@ -854,6 +856,7 @@ class Debate(commands.Cog):
         self.bot = bot
         self.studio_task: Optional[Task] = None
         self.lounge_task: Optional[Task] = None
+        self.lfd_last_run = None
         super().__init__()
 
     @commands.Cog.listener()
@@ -886,6 +889,62 @@ class Debate(commands.Cog):
                     description="You are not authorized to run this command.",
                     color=0xE74C3C,
                 ),
+            )
+            return
+
+    @app_commands.command(
+        name="lfd",
+        description="Let members who are online in the server know you're looking for a debate.",
+    )
+    async def lfd(self, interaction: discord.Interaction) -> None:
+        # These checks handle error messages automatically.
+        if not await in_debate_room(self.bot, interaction):
+            return
+
+        channel = interaction.channel
+        room_number = get_room_number(self.bot, channel)
+        room: typing.Optional[DebateRoom] = get_room(self.bot, room_number)
+        author = interaction.user
+
+        if room.match:
+            if room.match.concluding:
+                await update(
+                    interaction,
+                    embed=Embed(
+                        title="Command Temporarily Disabled",
+                        description="This command only works once the debate match has finished concluding.",
+                        color=0xE74C3C,
+                    ),
+                    ephemeral=True,
+                )
+                return
+
+        if self.lfd_last_run:
+            if datetime.now() > self.lfd_last_run + timedelta(hours=1):
+                self.lfd_last_run = datetime.now()
+                await update(
+                    interaction,
+                    content=f"🎙️ @here {author.mention} is looking for a debate! 🎙️",
+                )
+                return
+            else:
+                time_left = self.lfd_last_run + timedelta(hours=1)
+                await update(
+                    interaction,
+                    embed=Embed(
+                        title="Command Cooldown Effective",
+                        description=f"You are not authorized to run this "
+                        f"command for another {precisedelta(time_left, format='%1.0f')}.",
+                        color=0xE74C3C,
+                    ),
+                    ephemeral=True,
+                )
+                return
+        else:
+            self.lfd_last_run = datetime.now()
+            await update(
+                interaction,
+                content=f"🎙️ @here {author.mention} is looking for a debate! 🎙️",
             )
             return
 
