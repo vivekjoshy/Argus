@@ -47,7 +47,7 @@ INVITE_READ_MESSAGE_HISTORY_ONLY = PermissionOverwrite(
 )
 GENERAL = PermissionOverwrite(
     create_instant_invite=True,
-    embed_links=False,
+    embed_links=True,
     attach_files=True,
 )
 ANNOUNCEMENT_ELEVATED = PermissionOverwrite(
