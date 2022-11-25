@@ -1,17 +1,17 @@
 import math
 import typing
 from queue import Queue
-from typing import Optional, List
+from typing import List, Optional
 
 import discord
-from discord import Embed, VoiceChannel, Interaction, Member, Role
+from discord import Embed, Interaction, Member, Role, VoiceChannel
 
 from argus.client import ArgusClient
 from argus.constants import DB_ROLE_NAME_MAP, RANK_RATING_MAP
 from argus.db.models.guild import GuildModel
 from argus.db.models.user import MemberModel
 from argus.models import DebateRoom
-from argus.utils import update, floor_rating
+from argus.utils import floor_rating, update
 
 
 def get_room_number(bot: ArgusClient, channel: VoiceChannel) -> Optional[int]:

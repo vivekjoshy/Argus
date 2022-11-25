@@ -1,7 +1,7 @@
 import uuid
 
 import discord
-from discord import ui, Interaction, Embed
+from discord import Embed, Interaction, ui
 
 from argus.db.models.user import MemberModel
 from argus.utils import update

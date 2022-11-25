@@ -12,13 +12,12 @@ import discord
 import matplotlib.pyplot as plt
 import openskill
 import pymongo
-from discord import app_commands, Member, Interaction, Embed, Role
+from discord import Embed, Interaction, Member, Role, app_commands
 from discord.app_commands import (
-    MissingRole,
+    AppCommandError,
     MissingAnyRole,
     MissingPermissions,
-    AppCommandError,
-    CommandOnCooldown,
+    MissingRole,
 )
 from discord.ext import commands
 from humanize import precisedelta
@@ -26,24 +25,24 @@ from matplotlib import ticker
 
 from argus.client import ArgusClient
 from argus.common import (
-    insert_skill,
-    get_room_number,
-    in_debate_room,
-    unlocked_in_private_room,
+    add_interface_message,
+    check_debater_in_any_room,
+    consented,
+    get_debater_room,
     get_room,
+    get_room_number,
+    in_commands_or_debate,
+    in_debate_room,
+    insert_skill,
+    unlocked_in_private_room,
     update_im,
     update_topic,
-    check_debater_in_any_room,
-    get_debater_room,
-    consented,
-    add_interface_message,
-    in_commands_or_debate,
 )
 from argus.constants import RANK_RATING_MAP
 from argus.db.models.user import MemberModel
 from argus.modals import DebateVotingRubric
-from argus.models import DebateRoom, DebateTopic, DebateParticipant
-from argus.utils import update, floor_rating, normalize
+from argus.models import DebateParticipant, DebateRoom, DebateTopic
+from argus.utils import floor_rating, normalize, update
 
 
 @app_commands.default_permissions(send_messages=True)
@@ -64,6 +63,16 @@ class Skill(
         self, interaction: Interaction, member: Optional[Member] = None
     ) -> None:
         command = discord.utils.get(interaction.guild.channels, name="commands")
+
+        if member.pending:
+            embed = Embed(
+                title=f"Invalid User Type",
+                description="Please run this command against a user that is past membership screening.",
+                color=0xE74C3C,
+            )
+            await update(interaction, embed=embed, ephemeral=True)
+            return
+
         if member:
             if member.bot:
                 embed = Embed(
@@ -263,6 +272,15 @@ class Skill(
         if not await in_commands_or_debate(self.bot, interaction):
             return
 
+        if player_a.pending or player_b.pending:
+            embed = Embed(
+                title=f"Invalid User Type",
+                description="Please run this command against users that are past membership screening.",
+                color=0xE74C3C,
+            )
+            await update(interaction, embed=embed, ephemeral=True)
+            return
+
         if player_a.bot or player_b.bot:
             embed = Embed(
                 title=f"Incorrect User Type",
@@ -401,6 +419,16 @@ class Skill(
     @app_commands.checks.has_permissions(administrator=True)
     async def repair(self, interaction: Interaction, member: Member) -> None:
         await interaction.response.defer()
+
+        if member.pending:
+            embed = Embed(
+                title=f"Invalid User Type",
+                description="Please run this command against a user that is past membership screening.",
+                color=0xE74C3C,
+            )
+            await update(interaction, embed=embed, ephemeral=True)
+            return
+
         if member.bot:
             embed = Embed(
                 title=f"Incorrect User Type",
@@ -434,6 +462,10 @@ class Skill(
         await update(interaction, embed=embed)
 
         for member in members:
+
+            if member.pending:
+                continue
+
             if member.bot:
                 continue
 
@@ -1968,35 +2000,38 @@ class Debate(commands.Cog):
             await member.add_roles(self.bot.state["map_roles"]["role_bot"])
             return
 
-        member_data = await self.bot.engine.find_one(
-            MemberModel, MemberModel.member == member.id
-        )
-        if member_data:
-            floored_rating = floor_rating(
-                float(20 * ((member_data.mu - 3 * member_data.sigma) + 25))
+    @commands.Cog.listener()
+    async def on_member_update(self, old_member, member):
+        if old_member.pending and not member.pending:
+            member_data = await self.bot.engine.find_one(
+                MemberModel, MemberModel.member == member.id
             )
-            current_rank_role: typing.Optional[Role] = None
-            for rank, rating in RANK_RATING_MAP.items():
-                if math.isclose(floored_rating, rating, rel_tol=1e-04):
-                    current_rank_role = self.bot.state["map_roles"][rank]
-                    break
-
-            if current_rank_role not in member.roles:
-                await member.add_roles(
-                    current_rank_role, reason="Added during member join."
+            if member_data:
+                floored_rating = floor_rating(
+                    float(20 * ((member_data.mu - 3 * member_data.sigma) + 25))
                 )
+                current_rank_role: typing.Optional[Role] = None
+                for rank, rating in RANK_RATING_MAP.items():
+                    if math.isclose(floored_rating, rating, rel_tol=1e-04):
+                        current_rank_role = self.bot.state["map_roles"][rank]
+                        break
 
-            for rank, rating in RANK_RATING_MAP.items():
-                rank_role = self.bot.state["map_roles"][rank]
-                if rank_role in member.roles:
-                    if rank_role != current_rank_role:
-                        await member.remove_roles(
-                            rank_role, reason="Removed during member join."
-                        )
-        else:
-            member_data = MemberModel(member=member)
-            await self.bot.engine.save(member_data)
-            await member.add_roles(self.bot.state["map_roles"]["role_novice"])
+                if current_rank_role not in member.roles:
+                    await member.add_roles(
+                        current_rank_role, reason="Added during member join."
+                    )
+
+                for rank, rating in RANK_RATING_MAP.items():
+                    rank_role = self.bot.state["map_roles"][rank]
+                    if rank_role in member.roles:
+                        if rank_role != current_rank_role:
+                            await member.remove_roles(
+                                rank_role, reason="Removed during member join."
+                            )
+            else:
+                member_data = MemberModel(member=member)
+                await self.bot.engine.save(member_data)
+                await member.add_roles(self.bot.state["map_roles"]["role_novice"])
 
     async def studio_release(self, room: DebateRoom):
         embed = Embed(

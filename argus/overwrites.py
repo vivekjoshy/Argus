@@ -1,4 +1,4 @@
-from discord import PermissionOverwrite, Interaction
+from discord import Interaction, PermissionOverwrite
 
 from argus.constants import CHANNEL_SORT_ORDER
 

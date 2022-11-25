@@ -1,18 +1,18 @@
 from queue import Queue
 
 import discord
-from discord import Interaction, Embed
+from discord import Embed, Interaction
 from discord.app_commands import (
     AppCommandError,
-    MissingAnyRole,
-    MissingRole,
-    MissingPermissions,
     CommandOnCooldown,
+    MissingAnyRole,
+    MissingPermissions,
+    MissingRole,
 )
 from discord.ext import commands
 
-from argus.formatter import TimeDelta
 from argus.constants import BOT_DESCRIPTION, PLUGINS
+from argus.formatter import TimeDelta
 from argus.utils import update
 
 

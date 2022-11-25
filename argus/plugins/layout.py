@@ -1,22 +1,22 @@
 import asyncio
 
 import discord
-from discord import app_commands, Embed, Permissions
+from discord import Embed, Permissions, app_commands
 from discord.ext import commands
 
 from argus.checks import check_prerequisites_enabled
 from argus.client import ArgusClient
-from argus.common import check_roles_exist, check_level_2
+from argus.common import check_level_2, check_roles_exist
 from argus.constants import (
+    CHANNEL_SORT_ORDER,
+    DB_CHANNEL_NAME_MAP,
     DB_ROLE_NAME_MAP,
-    ROLE_PERMISSIONS,
     RANK_RATING_MAP,
     ROLE_COLORS,
-    DB_CHANNEL_NAME_MAP,
-    CHANNEL_SORT_ORDER,
+    ROLE_PERMISSIONS,
 )
 from argus.db.models.guild import GuildModel
-from argus.overwrites import generate_overwrites, NEGATIVE, MODERATION_BOT, BASE
+from argus.overwrites import BASE, MODERATION_BOT, NEGATIVE, generate_overwrites
 from argus.utils import update
 
 

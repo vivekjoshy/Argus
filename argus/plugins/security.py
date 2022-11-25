@@ -3,7 +3,7 @@ import datetime
 
 import discord
 import pytz
-from discord import app_commands, Embed, Permissions
+from discord import Embed, Permissions, app_commands
 from discord.ext import commands
 
 from argus.checks import check_prerequisites_enabled

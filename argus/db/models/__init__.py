@@ -1,4 +1,4 @@
-from discord import Role, Guild, Member
+from discord import Guild, Member, Role
 from discord.abc import GuildChannel
 
 from argus.app import bot

@@ -1,11 +1,11 @@
-from typing import Literal, List, Dict, Optional
+from typing import Dict, List, Literal, Optional
 
 import discord
-from discord import app_commands, Interaction, Embed, Member
+from discord import Embed, Interaction, Member, app_commands
 from discord.ext.commands import GroupCog
 from pyrankvote import (
-    Candidate,
     Ballot,
+    Candidate,
     instant_runoff_voting,
     single_transferable_vote,
 )

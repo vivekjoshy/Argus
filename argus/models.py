@@ -1,9 +1,9 @@
 import datetime
-from typing import Optional, Tuple, List
+from typing import List, Optional, Tuple
 
 import discord
 import openskill
-from discord import VoiceChannel, Member
+from discord import Member, VoiceChannel
 
 
 class DebateTopic:

@@ -2,7 +2,7 @@ import asyncio
 import sys
 
 import argus
-from argus.app import bot, logger, db, engine
+from argus.app import bot, db, engine, logger
 from argus.config import config
 
 # Faster Event Loop

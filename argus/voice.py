@@ -4,7 +4,7 @@ from queue import PriorityQueue
 from discord import VoiceChannel
 
 from argus.client import ArgusClient
-from argus.overwrites import MODERATION_BOT, NEGATIVE, BASE
+from argus.overwrites import BASE, MODERATION_BOT, NEGATIVE
 
 
 def vc_is_visible(bot: ArgusClient, vc: VoiceChannel):
