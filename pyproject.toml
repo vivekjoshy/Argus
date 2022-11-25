@@ -33,7 +33,7 @@ python_files = [
 ]
 
 [tool.poetry]
-name = "Argus"
+name = "argus"
 version = "1.0.0-alpha.0"
 description = "Elections and Debates for Discord Servers"
 authors = ["Taven <taven@opendebates.net>"]
