@@ -59,7 +59,7 @@ classifiers = [
     "Topic :: Communications :: Chat"
 ]
 packages = [
-    { include = "Argus" }
+    { include = "argus" }
 ]
 include = [
     ".bumpversion.cfg",
