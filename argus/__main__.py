@@ -13,7 +13,7 @@ try:
 except ImportError:
     pass
 
-bot.logger.info(f"Starting Argus", version=argus.__version__)
+logger.info(f"Starting Argus: {argus.__version__}")
 bot.db = db
 bot.engine = engine
 

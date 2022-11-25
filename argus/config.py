@@ -1,14 +1,17 @@
 import sys
 
 import toml
-from schema import Optional, Or, Schema
+from schema import Or, Schema
 
 config_schema = Schema(
     {
         "bot": {
             "token": str,
             "debug": Or(True, False),
-            "log_level": Or(
+            "production": Or(True, False),
+        },
+        "logs": {
+            "level": Or(
                 "DEBUG",
                 "INFO",
                 "WARNING",
@@ -17,21 +20,7 @@ config_schema = Schema(
             ),
             "sentry": str,
         },
-        "database": {
-            # Schema hooks can be used to force driver detail checks
-            # as noted in https://git.io/fhhd2 instead of resorting
-            # to blanket optionals. Will get to this later if more
-            # databases are needed!
-            "enabled": Or(True, False),
-            Optional("driver"): "mongo",
-            Optional("uri"): str,
-            Optional("host"): [str],
-            Optional("port"): int,
-            Optional("username"): str,
-            Optional("password"): str,
-            Optional("database"): str,
-            Optional("replica"): str,
-        },
+        "database": {"uri": str, "name": str},
         "global": {"name": str, "guild_id": int},
     },
     ignore_extra_keys=True,

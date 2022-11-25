@@ -15,7 +15,7 @@ class MongoClient(AsyncIOMotorClient, DatabaseDriverBase):
         self.conn = None
 
         # Config
-        self.database = config["database"]["database"]
+        self.database = config["database"]["name"]
         try:
             self.uri = config["database"]["uri"]
         except KeyError as e:

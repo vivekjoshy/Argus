@@ -4,7 +4,14 @@
 
 <br>
 
-Setting up this bot is easy. All you have to do is create a `config.toml` in the root directory like this:
+Setting up this bot is easy. Invite the bot account to your server first. Then keep note of the guild `id`.
+Make sure the server is empty and has the community option enabled. You also have to give the bot admin and the highest role in the server (if you invited the bot with admin permission, drag the role to the top).
+
+Finally make sure you set a rules channel named "rules" and a community updates channel called "community-updates".
+
+Now we can truly begin.
+
+First you have to create a `config.toml` in the root directory of this repository like this:
 
 ```toml
 [bot]
@@ -14,32 +21,36 @@ token = "OaA2MfMzMsgzMTg3MDA5YRE2.trjisg.sI0ds5dX3abh5acbqkLJUQOjseo"
 
 # Whether you want to see more verbose logs.
 debug = false
-log_type = "Timed"
-log_level = "INFO"
+
+# When you'r ready to release.
+# Logs will be larger and last longer in production.
+production = true
+
+[logs]
+
+# Default Logging Level
+level = "INFO"
+
+# Sentry DSN
 sentry = "https://5636365a78d3344a9b0445536b792440447a@o141345.ingest.sentry.io/4747464"
 
 
 [database]
-enabled = true
-driver= "mongo"
 
 # This bot requires a URI from a MongoDB you set up.
 uri = "mongodb+srv://argus:password123@argus-alpha.abcd.mongodb.net/argus?retryWrites=true&w=majority"
-database = "argus"
+
+# Name of the database.
+name = "argus"
 
 [global]
+
+# Name of the bot you want rendered.
 name = "Argus"
+
+# The Discord Snowflake for the guild the bot is in.
 guild_id = 729148350156134416
-
-
 ```
-
-Then add an .env file with these contents:
-```dotenv
-STRUCTLOG_SENTRY_LOGGER_LOCAL_DEVELOPMENT_LOGGING_MODE_ON=
-STRUCTLOG_SENTRY_LOGGER_CLOUD_SENTRY_INTEGRATION_MODE_ON=
-```
-
 
 Once this is done you can easily start this bot by installing the project locally using `pip`.
 
@@ -47,7 +58,7 @@ Once this is done you can easily start this bot by installing the project locall
 pip install -e .
 ```
 
-To start the bot simply do this:
+To start the bot simply enter this:
 
 ```bash
 argus
