@@ -89,6 +89,8 @@ humanize = "^4.4.0"
 sentry-sdk = "^1.11.1"
 loguru = "^0.6.0"
 
+[tool.poetry.group.web.dependencies]
+streamlit = "^1.15.2"
 
 [tool.poetry.group.docs.dependencies]
 sphinx = "^5.3.0"
