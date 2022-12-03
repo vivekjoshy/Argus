@@ -88,6 +88,7 @@ pytz = "^2022.6"
 humanize = "^4.4.0"
 sentry-sdk = "^1.11.1"
 loguru = "^0.6.0"
+requests = "^2.28.1"
 
 [tool.poetry.group.web.dependencies]
 streamlit = "^1.15.2"

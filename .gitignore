@@ -130,3 +130,5 @@ dmypy.json
 
 # Config Files
 config.toml
+/.streamlit/secrets.toml
+/.streamlit/
