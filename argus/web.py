@@ -11,6 +11,12 @@ from argus.db.models.user import MemberModel
 from argus.utils import normalize
 
 # Set Title
+st.set_page_config(
+    page_title="Argus: Database Inspector",
+    page_icon="🧊",
+    layout="wide",
+    initial_sidebar_state="expanded",
+)
 st.title("Argus: Database Inspector")
 
 # Secrets
