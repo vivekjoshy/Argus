@@ -55,29 +55,49 @@ with st.container():
             if avatar_hash.startswith("a_"):
                 avatar_url = f"{USER_AVATAR}/{member_id}/{avatar_hash}.gif"
 
-            col1, col2, col3 = st.columns(3)
-            with col2:
-                st.image(
-                    avatar_url, caption=f"{data['username']}#{data['discriminator']}"
-                )
-                table = {
-                    "Rating": [member.rating],
-                    "Mean (µ)": [member.mu],
-                    "Confidence Interval (σ)": [member.sigma],
-                }
-                df = pd.DataFrame(table)
-    st.table(df)
+            pipeline = [
+                {"$sort": {"rating": -1}},
+                {"$group": {"_id": None, "items": {"$push": "$$ROOT"}}},
+                {"$unwind": {"path": "$items", "includeArrayIndex": "items.rank"}},
+                {"$replaceRoot": {"newRoot": "$items"}},
+                {"$addFields": {"newRank": {"$add": ["$rank", 1]}}},
+                {"$match": {"member": int(member_id)}},
+            ]
 
-    y = {
-        "Factual": member.factual,
-        "Consistent": member.consistent,
-        "Charitable": member.charitable,
-        "Respectful": member.respectful,
-    }
-    y = normalize(y)
-    plt.style.use("ggplot")
-    fig, ax = plt.subplots()
-    ax.barh(list(y.keys()), list(y.values()))
-    plt.tight_layout()
-    ax.xaxis.set_major_formatter(ticker.PercentFormatter(xmax=1))
-    st.pyplot(fig)
+            member_found = None
+            member_doc = db[config["database"]["name"]].member.aggregate(
+                pipeline=pipeline
+            )
+            for member_found in member_doc:
+                break
+
+            if member_found:
+                col1, col2, col3 = st.columns(3)
+                with col2:
+                    st.image(
+                        avatar_url,
+                        caption=f"{data['username']}#{data['discriminator']}",
+                    )
+                    table = {
+                        "Server Rank": [member_found["rank"] + 1],
+                        "Rating": [member.rating],
+                        "Mean (µ)": [member.mu],
+                        "Confidence Interval (σ)": [member.sigma],
+                    }
+                    df = pd.DataFrame(table)
+                st.table(df)
+                y = {
+                    "Factual": member.factual,
+                    "Consistent": member.consistent,
+                    "Charitable": member.charitable,
+                    "Respectful": member.respectful,
+                }
+                y = normalize(y)
+                plt.style.use("ggplot")
+                fig, ax = plt.subplots()
+                ax.barh(list(y.keys()), list(y.values()))
+                plt.tight_layout()
+                ax.xaxis.set_major_formatter(ticker.PercentFormatter(xmax=1))
+                st.pyplot(fig)
+            else:
+                st.error("*Database seems to be corrupt. Please contact an engineer.*")
