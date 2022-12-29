@@ -39,14 +39,14 @@ guild_id = config["global"]["guild_id"]
 
 with st.container():
     skill_cursor = (
-        db[config["database"]["name"]]
-        .member.find()
-        .sort("rating", pymongo.DESCENDING)
+        db[config["database"]["name"]].member.find().sort("rating", pymongo.DESCENDING)
     )
 
     st.write("Top 10 Debaters:")
 
-    tabs = (tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9, tab10) = st.tabs([f"#{i}" for i in range(1, 11)])
+    tabs = (tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9, tab10) = st.tabs(
+        [f"#{i}" for i in range(1, 11)]
+    )
 
     count = 0
     for skill_mapping in skill_cursor:
@@ -95,4 +95,3 @@ with st.container():
             plt.tight_layout()
             ax.xaxis.set_major_formatter(ticker.PercentFormatter(xmax=1))
             st.pyplot(fig)
-
