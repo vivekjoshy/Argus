@@ -4,6 +4,7 @@ import pymongo
 import requests
 import streamlit as st
 from matplotlib import pyplot as plt, ticker
+from matplotlib.backends.backend_agg import RendererAgg
 from odmantic import SyncEngine
 from pymongo import MongoClient
 
@@ -89,9 +90,11 @@ with st.container():
                 "Respectful": member.respectful,
             }
             y = normalize(y)
-            plt.style.use("ggplot")
-            fig, ax = plt.subplots()
-            ax.barh(list(y.keys()), list(y.values()))
-            plt.tight_layout()
-            ax.xaxis.set_major_formatter(ticker.PercentFormatter(xmax=1))
-            st.pyplot(fig)
+            _lock = RendererAgg.lock
+            with _lock:
+                plt.style.use("ggplot")
+                fig, ax = plt.subplots()
+                ax.barh(list(y.keys()), list(y.values()))
+                plt.tight_layout()
+                ax.xaxis.set_major_formatter(ticker.PercentFormatter(xmax=1))
+                st.pyplot(fig)
