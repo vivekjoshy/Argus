@@ -547,7 +547,6 @@ async def update_topic(bot: ArgusClient, room: DebateRoom):
             debaters = []
             if match.concluding is False and match.concluded is False:
                 if topic_updated:
-
                     debaters = room.stop_match()
 
                     # Mute debaters early

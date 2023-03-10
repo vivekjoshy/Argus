@@ -462,7 +462,6 @@ class Skill(
         await update(interaction, embed=embed)
 
         for member in members:
-
             if member.pending:
                 continue
 
@@ -709,7 +708,6 @@ class Topic(
     async def view(
         self, interaction: Interaction, member: Optional[Member] = None
     ) -> None:
-
         # These checks handle error messages automatically.
         if not await in_debate_room(self.bot, interaction):
             return
@@ -778,7 +776,6 @@ class Topic(
     async def remove(
         self, interaction: Interaction, member: Optional[Member] = None
     ) -> None:
-
         # These checks handle error messages automatically.
         if not await in_debate_room(self.bot, interaction):
             return
