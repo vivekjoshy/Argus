@@ -4,6 +4,8 @@
 
 <br>
 
+<b>Disclaimer: Project <u>Not Maintained</u></b>
+
 Setting up this bot is easy. Invite the bot account to your server first. Then keep note of the guild `id`.
 Make sure the server is empty and has the community option enabled. You also have to give the bot admin and the highest role in the server (if you invited the bot with admin permission, drag the role to the top).
 
